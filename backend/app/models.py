@@ -29,6 +29,7 @@ class Project(Base):
     organization: Mapped[str] = mapped_column(String)
     project_type: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(Text)
+    road_name: Mapped[str | None] = mapped_column(String, index=True)
     road_segment_id: Mapped[str | None] = mapped_column(ForeignKey("road_segments.id"))
     geometry: Mapped[object | None] = mapped_column(Geometry("LINESTRING", srid=4326), nullable=True)
     start_date: Mapped[date] = mapped_column(Date)

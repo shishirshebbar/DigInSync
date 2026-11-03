@@ -21,6 +21,7 @@ async def create_project(db: AsyncSession, payload: ProjectCreate) -> Project:
         organization=payload.organization,
         project_type=payload.project_type,
         description=payload.description,
+        road_name=payload.road_name,
         start_date=payload.start_date,
         end_date=payload.end_date,
         duration_days=duration,
