@@ -18,8 +18,12 @@ def _get_engine():
     if _engine is None:
         from app.config import get_settings
         settings = get_settings()
+        # Ensure async driver — replace sync postgresql:// with postgresql+asyncpg://
+        db_url = settings.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if not db_url.startswith("postgresql+asyncpg://"):
+            db_url = settings.database_url
         _engine = create_async_engine(
-            settings.database_url,
+            db_url,
             echo=settings.environment == "development",
             pool_pre_ping=True,
             pool_size=10,
