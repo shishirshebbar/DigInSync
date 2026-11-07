@@ -12,14 +12,9 @@ from alembic import context
 # Make sure `app` is importable from the backend directory
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-# Load .env.local so DATABASE_URL is available when running outside Docker
-try:
-    from dotenv import load_dotenv
-    env_path = Path(__file__).parents[2] / ".env.local"
-    if env_path.exists():
-        load_dotenv(env_path)
-except ImportError:
-    pass
+from app.env import load_project_env
+
+load_project_env(Path(__file__).parents[2] / ".env.local")
 
 # Import Base and all models so Alembic sees all table metadata.
 # We import Base from app.database but patch get_settings to use env vars

@@ -2,41 +2,34 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import type { SimulationResponse, SimulationResult } from "@/types";
 
 interface Props {
   projectId: string;
+  initialStartDate: string;
+  initialEndDate: string;
   onBack: () => void;
 }
 
-interface SimResult {
-  conflict_count: number;
-  has_high_severity: boolean;
-  risk_score: number;
-  risk_level: string;
-}
-
-interface SimResponse {
-  before: SimResult;
-  after: SimResult;
-  improvement: boolean;
-}
-
-export default function WhatIfSimulator({ projectId, onBack }: Props) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [result, setResult] = useState<SimResponse | null>(null);
+export default function WhatIfSimulator({ projectId, initialStartDate, initialEndDate, onBack }: Props) {
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [result, setResult] = useState<SimulationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSimulate() {
-    if (!startDate || !endDate) return;
+    setResult(null);
+    if (!startDate || !endDate || endDate <= startDate) {
+      setError("Enter both dates; the end date must be after the start date.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const res = await api.simulate(projectId, [
+      setResult(await api.simulate(projectId, [
         { project_id: projectId, new_start_date: startDate, new_end_date: endDate },
-      ]) as SimResponse;
-      setResult(res);
+      ]));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Simulation failed.");
     } finally {
@@ -48,58 +41,63 @@ export default function WhatIfSimulator({ projectId, onBack }: Props) {
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <h2 className="text-lg font-semibold mb-1">What-if simulator</h2>
       <p className="text-sm text-gray-500 mb-5">
-        Change the schedule and see how conflicts and risk update.
+        Compare a proposed schedule for this project. This does not save or approve changes.
+        The end date is exclusive. No AI call is made.
       </p>
-
       <div className="grid grid-cols-2 gap-4 mb-5">
         <label className="block">
           <span className="text-xs font-medium text-gray-600 mb-1 block">New start date</span>
-          <input type="date" className="input w-full"
-            value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <input type="date" className="input w-full" value={startDate} disabled={loading}
+            onChange={(e) => { setStartDate(e.target.value); setResult(null); }} />
         </label>
         <label className="block">
           <span className="text-xs font-medium text-gray-600 mb-1 block">New end date</span>
-          <input type="date" className="input w-full"
-            value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <input type="date" className="input w-full" value={endDate} disabled={loading}
+            onChange={(e) => { setEndDate(e.target.value); setResult(null); }} />
         </label>
       </div>
-
       <div className="flex gap-3 mb-6">
-        <button onClick={onBack}
-          className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+        <button onClick={onBack} className="px-4 py-2 text-sm border border-gray-300 rounded-lg">
           ← Back
         </button>
-        <button onClick={handleSimulate} disabled={loading || !startDate || !endDate}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors">
+        <button onClick={handleSimulate} disabled={loading}
+          className="bg-blue-600 disabled:bg-gray-300 text-white font-medium px-5 py-2 rounded-lg text-sm">
           {loading ? "Running…" : "Run simulation"}
         </button>
       </div>
-
-      {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 mb-4">{error}</p>
-      )}
-
+      {error && <p role="alert" className="text-sm text-red-600 mb-4">{error}</p>}
       {result && (
-        <div className="grid grid-cols-2 gap-4">
-          <SimCard label="Before" data={result.before} />
-          <SimCard label="After" data={result.after} highlight={result.improvement} />
-        </div>
+        <>
+          <div className="grid md:grid-cols-2 gap-4">
+            <SimCard label="Before" data={result.before} />
+            <SimCard label="Proposed" data={result.after} />
+          </div>
+          <p className="text-xs text-gray-600 mt-4">Location basis: {result.location_basis}</p>
+          <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
+            {result.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
+        </>
       )}
     </div>
   );
 }
 
-function SimCard({ label, data, highlight }: { label: string; data: SimResult; highlight?: boolean }) {
+function SimCard({ label, data }: { label: string; data: SimulationResult }) {
   return (
-    <div className={`border rounded-lg p-4 ${highlight ? "border-green-400 bg-green-50" : "border-gray-200"}`}>
-      <p className="text-xs font-medium text-gray-500 mb-2">{label}</p>
-      <p className="text-sm">Conflicts: <strong>{data.conflict_count}</strong></p>
-      <p className="text-sm">
-        Risk: <strong>{Math.round(data.risk_score)}</strong>
-        <span className={`ml-1 text-xs ${data.risk_level === "HIGH" ? "text-red-600" : data.risk_level === "MEDIUM" ? "text-yellow-600" : "text-green-600"}`}>
-          {data.risk_level}
-        </span>
-      </p>
+    <div className="border border-gray-200 rounded-lg p-4">
+      <h3 className="font-medium mb-2">{label}</h3>
+      <p className="text-sm">{data.start_date} to {data.end_date} (exclusive): {data.duration_days} days</p>
+      <p className="text-sm">Candidate conflicts: <strong>{data.conflict_count}</strong></p>
+      <p className="text-sm">Candidates with overlapping dates: <strong>{data.temporal_overlap_count}</strong></p>
+      <p className="text-sm">High severity candidate: <strong>{data.has_high_severity ? "Yes" : "No"}</strong></p>
+      <p className="text-sm">Experimental indicator: <strong>{data.risk_score}/100 ({data.risk_level})</strong></p>
+      <p className="text-xs text-gray-500">Model: {data.model_version}</p>
+      {data.conflicts.map((item) => (
+        <div key={item.project_b_id} className="text-xs border-t mt-2 pt-2">
+          <p>{item.project_b_name}</p>
+          <p>Conflict score: {item.conflict_score}/100 ({item.severity}); overlapping days: {item.overlap_days}</p>
+        </div>
+      ))}
     </div>
   );
 }

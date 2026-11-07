@@ -92,6 +92,7 @@ class Grievance(Base):
     geometry: Mapped[object | None] = mapped_column(Geometry("POINT", srid=4326), nullable=True)
     category: Mapped[str | None] = mapped_column(String)
     date: Mapped[date | None] = mapped_column(Date)
+    ward: Mapped[str | None] = mapped_column(String)
     status: Mapped[str | None] = mapped_column(String)
 
 

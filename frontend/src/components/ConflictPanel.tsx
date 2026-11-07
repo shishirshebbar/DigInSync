@@ -19,7 +19,7 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
       </div>
 
       {result.conflict_count === 0 ? (
-        <p className="text-sm text-gray-500">No conflicts found. Safe to proceed.</p>
+        <p className="text-sm text-gray-500">No conflicts found among the available candidates. This does not establish that work is safe to proceed.</p>
       ) : (
         <ul className="space-y-3">
           {result.conflicts.map((c, i) => (
@@ -34,13 +34,16 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
               </div>
               <div className="text-xs text-gray-500 flex gap-4">
                 {c.temporal_overlap && <span>⏱ {c.overlap_days}-day overlap</span>}
-                {c.spatial_overlap && <span>📍 Spatial overlap</span>}
+                {c.spatial_overlap && <span>📍 {result.location_basis === "road_name" ? "Same road name (unverified location)" : "Within specified radius"}</span>}
                 {c.impact_overlap && <span>⚠️ Impact conflict</span>}
               </div>
             </li>
           ))}
         </ul>
       )}
+      {result.warnings.map((warning) => (
+        <p key={warning} className="mt-3 text-sm text-amber-700">{warning}</p>
+      ))}
     </div>
   );
 }

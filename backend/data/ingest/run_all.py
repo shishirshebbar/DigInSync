@@ -7,8 +7,8 @@ Usage:
     # 3. Run:
     python -m data.ingest.run_all
 
-Optional: place real CSV files in data/raw/bbmp/ before running
-to use actual BBMP data instead of synthetic seed data.
+Place the supplied work_orders.csv and grievances.csv in the repository's
+data/raw directory before running. BBMP ingestion does not synthesize records.
 """
 import os
 import sys
@@ -17,16 +17,10 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
-# Load .env.local if present (for running outside Docker)
-try:
-    from dotenv import load_dotenv
-    from pathlib import Path
-    env_path = Path(__file__).parents[3] / ".env.local"
-    if env_path.exists():
-        load_dotenv(env_path)
-        log.info("Loaded .env.local")
-except ImportError:
-    pass
+from pathlib import Path
+from app.env import load_project_env
+
+load_project_env(Path(__file__).resolve().parents[3] / ".env.local")
 
 
 def main():
@@ -46,12 +40,8 @@ def main():
 
     # Step 1: OSM road network
     log.info("Step 1/2 — OSM road segments")
-    try:
-        from data.ingest.osm_roads import main as osm_main
-        osm_main()
-    except Exception as e:
-        log.error("OSM ingestion failed: %s", e)
-        log.warning("Continuing without OSM data — road_segments table will be empty")
+    from data.ingest.osm_roads import main as osm_main
+    osm_main()
 
     # Step 2: BBMP public data
     log.info("Step 2/2 — BBMP data (work orders, repairs, potholes, grievances)")

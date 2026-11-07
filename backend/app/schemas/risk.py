@@ -27,3 +27,7 @@ class RiskPredictResponse(BaseModel):
     risk_level: str    # LOW | MEDIUM | HIGH
     model_version: str
     features_used: Optional[RiskFeatures] = None
+    experimental: bool
+    road_segment_matched: bool
+    historical_features_available: bool
+    warnings: list[str]

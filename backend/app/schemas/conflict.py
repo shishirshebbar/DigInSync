@@ -25,3 +25,5 @@ class ConflictAnalyzeResponse(BaseModel):
     conflict_count: int
     conflicts: list[ConflictDetail]
     has_high_severity: bool
+    location_basis: str
+    warnings: list[str]

@@ -11,7 +11,7 @@ export default function RiskPanel({ result }: { result: RiskResult }) {
 
   return (
     <div className={`rounded-xl border p-6 shadow-sm ${c.bg}`}>
-      <h2 className="text-lg font-semibold mb-3">Disruption Risk</h2>
+      <h2 className="text-lg font-semibold mb-3">Experimental risk indicator</h2>
 
       <div className="flex items-end gap-4 mb-3">
         <span className={`text-5xl font-bold ${c.text}`}>
@@ -34,6 +34,9 @@ export default function RiskPanel({ result }: { result: RiskResult }) {
       <p className="text-xs text-gray-500 mt-2">
         Model version {result.model_version}
       </p>
+      <ul className="mt-3 space-y-1 text-sm text-gray-700">
+        {result.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+      </ul>
     </div>
   );
 }

@@ -86,8 +86,10 @@ CREATE TABLE IF NOT EXISTS grievances (
     geometry geometry(POINT, 4326),
     category VARCHAR,
     date DATE,
+    ward VARCHAR,
     status VARCHAR
 );
+ALTER TABLE grievances ADD COLUMN IF NOT EXISTS ward VARCHAR;
 CREATE INDEX IF NOT EXISTS idx_grievances_geometry ON grievances USING GIST (geometry);
 
 -- conflicts
@@ -158,6 +160,6 @@ CREATE TABLE IF NOT EXISTS alembic_version (
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 DELETE FROM alembic_version;
-INSERT INTO alembic_version VALUES ('0002_road_name_and_features');
+INSERT INTO alembic_version VALUES ('0003_grievance_ward');
 
 SELECT 'Schema created successfully' AS result;

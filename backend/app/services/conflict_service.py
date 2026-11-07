@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import and_, or_, select, text
 
 from app.models import Project, Conflict
 from app.schemas.conflict import (
@@ -61,20 +61,24 @@ async def analyze(
         if not (result_obj.spatial_overlap or result_obj.temporal_overlap):
             continue
 
-        # Persist to conflicts table
-        conflict_row = Conflict(
-            id=_uuid(),
-            project_a_id=project.id,
-            project_b_id=neighbour.id,
-            spatial_overlap=result_obj.spatial_overlap,
-            temporal_overlap=result_obj.temporal_overlap,
-            overlap_days=result_obj.overlap_days,
-            impact_score=result_obj.conflict_score,
-            conflict_score=result_obj.conflict_score,
-            severity=result_obj.severity,
-            status="OPEN",
-        )
-        db.add(conflict_row)
+        existing = await db.execute(select(Conflict).where(
+            Conflict.status == "OPEN",
+            or_(
+                and_(Conflict.project_a_id == project.id, Conflict.project_b_id == neighbour.id),
+                and_(Conflict.project_a_id == neighbour.id, Conflict.project_b_id == project.id),
+            ),
+        ))
+        conflict_row = existing.scalars().first()
+        if conflict_row is None:
+            conflict_row = Conflict(id=_uuid(), project_a_id=project.id,
+                                    project_b_id=neighbour.id, status="OPEN")
+            db.add(conflict_row)
+        conflict_row.spatial_overlap = result_obj.spatial_overlap
+        conflict_row.temporal_overlap = result_obj.temporal_overlap
+        conflict_row.overlap_days = result_obj.overlap_days
+        conflict_row.impact_score = result_obj.conflict_score
+        conflict_row.conflict_score = result_obj.conflict_score
+        conflict_row.severity = result_obj.severity
 
         conflicts.append(ConflictDetail(
             project_a_id=project.id,
@@ -96,6 +100,10 @@ async def analyze(
         conflict_count=len(conflicts),
         conflicts=conflicts,
         has_high_severity=any(c.severity == "HIGH" for c in conflicts),
+        location_basis="geometry" if project.geometry is not None else "road_name",
+        warnings=["Only projects with recorded geometry are checked by proximity; projects without geometry may be missed."] if project.geometry is not None else [
+            "Projects have not been matched to road geometry. Conflict candidates use exact road-name matches, not verified proximity."
+        ],
     )
 
 
@@ -113,24 +121,27 @@ async def _find_neighbours(
 
     if project.geometry is not None:
         stmt = text("""
-            SELECT * FROM projects
-            WHERE id != :pid
-              AND status = ANY(:statuses)
-              AND geometry IS NOT NULL
+            SELECT candidate.id FROM projects candidate
+            JOIN projects target ON target.id = :pid
+            WHERE candidate.id != :pid
+              AND candidate.status = ANY(:statuses)
+              AND candidate.geometry IS NOT NULL
               AND ST_DWithin(
-                    geometry::geography,
-                    ST_GeomFromEWKT(:geom)::geography,
+                    candidate.geometry::geography,
+                    target.geometry::geography,
                     :radius
                   )
         """)
         res = await db.execute(stmt, {
             "pid": project.id,
             "statuses": list(active_statuses),
-            "geom": f"SRID=4326;{project.geometry}",
             "radius": radius_m,
         })
-        rows = res.mappings().all()
-        return [Project(**dict(r)) for r in rows]
+        ids = res.scalars().all()
+        if not ids:
+            return []
+        res = await db.execute(select(Project).where(Project.id.in_(ids)))
+        return list(res.scalars().all())
 
     # Fallback: road_name match
     if project.road_name:
@@ -156,13 +167,14 @@ async def _check_spatial_overlap(
     if project.geometry is not None and neighbour.geometry is not None:
         res = await db.execute(text("""
             SELECT ST_DWithin(
-                ST_GeomFromEWKT(:geom_a)::geography,
-                ST_GeomFromEWKT(:geom_b)::geography,
+                a.geometry::geography,
+                b.geometry::geography,
                 :radius
-            ) AS overlaps
+            ) AS overlaps FROM projects a CROSS JOIN projects b
+            WHERE a.id = :project_a AND b.id = :project_b
         """), {
-            "geom_a": f"SRID=4326;{project.geometry}",
-            "geom_b": f"SRID=4326;{neighbour.geometry}",
+            "project_a": project.id,
+            "project_b": neighbour.id,
             "radius": radius_m,
         })
         row = res.fetchone()

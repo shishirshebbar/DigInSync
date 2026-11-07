@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Any
+from pathlib import Path
+from app.env import load_project_env
 
 
 class Settings(BaseSettings):
@@ -30,8 +32,7 @@ class Settings(BaseSettings):
     ml_model_version: str = "1.0.0"
 
     model_config = SettingsConfigDict(
-        env_file=".env.local",
-        env_file_encoding="utf-8",
+        env_file=None,
         case_sensitive=False,
         extra="ignore",
     )
@@ -39,4 +40,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    load_project_env(Path(__file__).resolve().parents[2] / ".env.local")
     return Settings()

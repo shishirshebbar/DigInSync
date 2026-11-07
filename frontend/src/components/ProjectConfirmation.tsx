@@ -11,7 +11,7 @@ interface Props {
 }
 
 const PROJECT_TYPES = [
-  "water_pipeline", "telecom", "electricity", "road_repair", "drainage", "utility",
+  "water_pipeline", "telecom", "electricity", "road_repair", "drainage", "utility", "utility_maintenance", "street_light",
 ];
 
 export default function ProjectConfirmation({ project, onConfirmed, onBack }: Props) {
@@ -24,14 +24,27 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
   }
 
   async function handleConfirm() {
+    if (!form.project_type || !form.road_name?.trim() || !form.start_date || !form.end_date ||
+        form.lane_closure === null || !form.organization?.trim() || !form.description?.trim()) {
+      setError("Complete the project type, road, dates, lane closure, organization and description before continuing.");
+      return;
+    }
+    if (form.end_date <= form.start_date) {
+      setError("End date must be after start date.");
+      return;
+    }
+    if (form.length_m !== null && (!Number.isFinite(form.length_m) || form.length_m <= 0)) {
+      setError("Length must be a positive number.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const created = await api.createProject({
-        organization: form.organization ?? "Unknown",
+        organization: form.organization.trim(),
         project_type: form.project_type,
-        description: form.description ?? "",
-        road_name: form.road_name,
+        description: form.description.trim(),
+        road_name: form.road_name.trim(),
         start_date: form.start_date,
         end_date: form.end_date,
         length_m: form.length_m,
@@ -48,15 +61,16 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <h2 className="text-lg font-semibold mb-1">Confirm extracted project details</h2>
-      <p className="text-sm text-gray-500 mb-5">Review and edit before analysis.</p>
+      <p className="text-sm text-gray-500 mb-5">Review all details and fill in missing or uncertain fields before analysis.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Project type">
           <select
             className="input"
-            value={form.project_type}
-            onChange={(e) => update("project_type", e.target.value)}
+            value={form.project_type ?? ""}
+            onChange={(e) => update("project_type", e.target.value || null)}
           >
+            <option value="">Select a project type</option>
             {PROJECT_TYPES.map((t) => (
               <option key={t} value={t}>{t.replace("_", " ")}</option>
             ))}
@@ -64,18 +78,18 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
         </Field>
 
         <Field label="Road name">
-          <input className="input" value={form.road_name}
-            onChange={(e) => update("road_name", e.target.value)} />
+          <input className="input" value={form.road_name ?? ""}
+            onChange={(e) => update("road_name", e.target.value || null)} />
         </Field>
 
         <Field label="Start date">
-          <input type="date" className="input" value={form.start_date}
-            onChange={(e) => update("start_date", e.target.value)} />
+          <input type="date" className="input" value={form.start_date ?? ""}
+            onChange={(e) => update("start_date", e.target.value || null)} />
         </Field>
 
         <Field label="End date">
-          <input type="date" className="input" value={form.end_date}
-            onChange={(e) => update("end_date", e.target.value)} />
+          <input type="date" className="input" value={form.end_date ?? ""}
+            onChange={(e) => update("end_date", e.target.value || null)} />
         </Field>
 
         <Field label="Length (metres)">
@@ -84,8 +98,9 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
         </Field>
 
         <Field label="Lane closure">
-          <select className="input" value={form.lane_closure}
-            onChange={(e) => update("lane_closure", Number(e.target.value))}>
+          <select className="input" value={form.lane_closure ?? ""}
+            onChange={(e) => update("lane_closure", e.target.value === "" ? null : Number(e.target.value))}>
+            <option value="">Select lane impact</option>
             <option value={0}>No</option>
             <option value={1}>Yes</option>
           </select>
@@ -94,6 +109,13 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
         <Field label="Organization">
           <input className="input" value={form.organization ?? ""}
             onChange={(e) => update("organization", e.target.value || null)} />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Project description">
+          <textarea className="input w-full" rows={3} value={form.description ?? ""}
+            onChange={(e) => update("description", e.target.value || null)} />
         </Field>
       </div>
 

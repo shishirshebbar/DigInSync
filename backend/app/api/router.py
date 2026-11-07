@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import projects, conflicts, risk, coordinate, simulate, workplans, impact
+from app.api.routes import projects, conflicts, risk, coordinate, simulate, workplans, impact, wards
 
 api_router = APIRouter()
 
@@ -11,3 +11,4 @@ api_router.include_router(coordinate.router, prefix="/coordinate", tags=["coordi
 api_router.include_router(simulate.router, prefix="/simulate", tags=["simulate"])
 api_router.include_router(workplans.router, prefix="/workplans", tags=["workplans"])
 api_router.include_router(impact.router, prefix="/impact", tags=["impact"])
+api_router.include_router(wards.router, prefix="/wards", tags=["wards"])

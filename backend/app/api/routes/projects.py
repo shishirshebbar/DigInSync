@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.schemas.project import ProjectCreate, ProjectRead, ProjectExtract
+from app.schemas.project import ProjectCreate, ProjectRead, ProjectExtract, ProjectExtractRequest
+from app.llm.provider import ExtractionError
 from app.services import project_service
 
 router = APIRouter()
@@ -33,12 +34,12 @@ async def list_nearby_projects(
 
 
 @router.post("/extract", response_model=ProjectExtract)
-async def extract_project(body: dict, db: AsyncSession = Depends(get_db)):
+async def extract_project(body: ProjectExtractRequest):
     """
     Agent 1 — Project Intelligence Agent.
     Accepts natural-language description, returns structured project fields.
     """
-    description = body.get("description", "")
-    if not description:
-        raise HTTPException(status_code=422, detail="description is required")
-    return await project_service.extract_project_from_nl(description)
+    try:
+        return await project_service.extract_project_from_nl(body.description)
+    except ExtractionError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc

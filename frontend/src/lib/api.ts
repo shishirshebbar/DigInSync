@@ -1,4 +1,5 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import type { ConflictResult, CoordinationResult, ExtractedProject, RiskResult, ScheduleChange, SimulationResponse } from "@/types";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -6,15 +7,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`API ${res.status}: ${detail}`);
+    const body: unknown = await res.json().catch(() => null);
+    if (body && typeof body === "object" && "detail" in body && typeof body.detail === "string") {
+      throw new Error(body.detail);
+    }
+    throw new Error(`Request failed (HTTP ${res.status}). Please check the entered details.`);
   }
   return res.json() as Promise<T>;
 }
 
 export const api = {
   extractProject: (description: string) =>
-    request("/api/projects/extract", {
+    request<ExtractedProject>("/api/projects/extract", {
       method: "POST",
       body: JSON.stringify({ description }),
     }),
@@ -26,25 +30,25 @@ export const api = {
     }),
 
   analyzeConflicts: (project_id: string) =>
-    request("/api/conflicts/analyze", {
+    request<ConflictResult>("/api/conflicts/analyze", {
       method: "POST",
       body: JSON.stringify({ project_id }),
     }),
 
   predictRisk: (project_id: string) =>
-    request("/api/risk/predict", {
+    request<RiskResult>("/api/risk/predict", {
       method: "POST",
       body: JSON.stringify({ project_id }),
     }),
 
-  coordinate: (project_id: string, conflict_ids: string[]) =>
-    request("/api/coordinate/", {
+  coordinate: (project_id: string, use_ai: boolean) =>
+    request<CoordinationResult>("/api/coordinate/", {
       method: "POST",
-      body: JSON.stringify({ project_id, conflict_ids }),
+      body: JSON.stringify({ project_id, use_ai }),
     }),
 
-  simulate: (base_project_id: string, schedule_changes: object[]) =>
-    request("/api/simulate/", {
+  simulate: (base_project_id: string, schedule_changes: ScheduleChange[]) =>
+    request<SimulationResponse>("/api/simulate/", {
       method: "POST",
       body: JSON.stringify({ base_project_id, schedule_changes }),
     }),

@@ -19,7 +19,7 @@ export default function ProjectInputForm({ onExtracted }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const extracted = await api.extractProject(description) as ExtractedProject;
+      const extracted = await api.extractProject(description);
       onExtracted(extracted);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to extract project. Please try again.");
@@ -32,7 +32,7 @@ export default function ProjectInputForm({ onExtracted }: Props) {
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <h2 className="text-lg font-semibold mb-1">Describe your infrastructure project</h2>
       <p className="text-sm text-gray-500 mb-4">
-        Use plain English. DigInSync will extract the details automatically.
+        Use plain English. AI extraction sends your description to the configured provider. Include the year in project dates.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,13 +60,25 @@ export default function ProjectInputForm({ onExtracted }: Props) {
         </button>
       </form>
 
+      <button
+        type="button"
+        className="mt-4 text-sm text-blue-700 underline"
+        onClick={() => onExtracted({
+          project_type: null, road_name: null, start_date: null, end_date: null,
+          length_m: null, lane_closure: null, organization: null,
+          description: description.trim() || null,
+        })}
+      >
+        Enter project details manually
+      </button>
+
       <div className="mt-6 border-t pt-4">
         <p className="text-xs text-gray-400 font-medium mb-2">Example inputs:</p>
         <ul className="space-y-1">
           {[
-            "Replace 150m water pipeline on 80 Feet Road, Nov 12–18. One lane closed.",
-            "Telecom cable work on MG Road from Dec 1–5. Full lane closure.",
-            "Drainage repair near Koramangala 5th Block, Nov 20–25.",
+            "Replace 150m water pipeline on 80 Feet Road, Nov 12–18, 2026. One lane closed.",
+            "Telecom cable work on MG Road from Dec 1–5, 2026. Full lane closure.",
+            "Drainage repair near Koramangala 5th Block, Nov 20–25, 2026.",
           ].map((ex) => (
             <li key={ex}>
               <button
