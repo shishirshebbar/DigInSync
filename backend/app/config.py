@@ -1,12 +1,17 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from typing import Any
 
 
 class Settings(BaseSettings):
     # App
     environment: str = "development"
     secret_key: str = "change-me-in-production"
-    backend_cors_origins: list[str] = ["http://localhost:3000"]
+    backend_cors_origins: str = "http://localhost:3000"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.backend_cors_origins.split(",")]
 
     # Database
     database_url: str = "postgresql+asyncpg://digsync:password@localhost:5432/digsync"
