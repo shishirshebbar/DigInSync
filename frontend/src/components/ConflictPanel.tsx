@@ -10,13 +10,14 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Conflicts detected</h2>
+        <h2 className="text-lg font-semibold">Candidate conflicts</h2>
         <span className={`text-sm font-medium px-3 py-1 rounded-full border ${
           result.has_high_severity ? SEVERITY_COLORS.HIGH : SEVERITY_COLORS.LOW
         }`}>
           {result.conflict_count} conflict{result.conflict_count !== 1 ? "s" : ""}
         </span>
       </div>
+      <p className="text-xs text-slate-600 mb-3">{result.conflicts.filter((item) => item.temporal_overlap).length} candidate(s) have overlapping dates. Candidate counts also include nearby work scheduled at other times.</p>
 
       {result.conflict_count === 0 ? (
         <p className="text-sm text-gray-500">No conflicts found among the available candidates. This does not establish that work is safe to proceed.</p>

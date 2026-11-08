@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class CoordinationOption(BaseModel):
+    option_key: str
     option_name: str
     description: str
     risk_score: float | None = None

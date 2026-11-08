@@ -15,8 +15,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("projects", sa.Column("road_name", sa.String, nullable=True))
-    op.create_index("idx_projects_road_name", "projects", ["road_name"])
+    inspector = sa.inspect(op.get_bind())
+    if "road_name" not in {column["name"] for column in inspector.get_columns("projects")}:
+        op.add_column("projects", sa.Column("road_name", sa.String, nullable=True))
+    if "idx_projects_road_name" not in {index["name"] for index in inspector.get_indexes("projects")}:
+        op.create_index("idx_projects_road_name", "projects", ["road_name"])
 
     # road_segment_features is created in 0001 already via the initial migration.
     # This migration is a no-op for that table but kept for tracking road_name addition.
@@ -24,4 +27,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("idx_projects_road_name", table_name="projects")
-    op.drop_column("projects", "road_name")
+    # Initial schema owns road_name; retain it when returning to revision 0001.

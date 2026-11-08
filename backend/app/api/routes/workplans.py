@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.workplan import WorkplanRead
+from app.schemas.proposal import PlanDecision
 from app.services import workplan_service
 
 router = APIRouter()
@@ -15,7 +16,7 @@ async def get_workplan(workplan_id: str, db: AsyncSession = Depends(get_db)):
     return workplan
 
 
-@router.post("/coordination-plans/{plan_id}/approve")
-async def approve_plan(plan_id: str, db: AsyncSession = Depends(get_db)):
+@router.post("/coordination-plans/{plan_id}/approve", response_model=WorkplanRead)
+async def approve_plan(plan_id: str, payload: PlanDecision, db: AsyncSession = Depends(get_db)):
     """Human approval — triggers Workplan Agent."""
-    return await workplan_service.approve_and_generate(db, plan_id)
+    return await workplan_service.approve_and_generate(db, plan_id, payload)

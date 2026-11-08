@@ -1,6 +1,7 @@
 "use client";
 
 import type { CoordinationResult } from "@/types";
+import PrepareProposalButton from "@/components/PrepareProposalButton";
 
 export default function RecommendationsPanel({ result }: { result: CoordinationResult }) {
   return (
@@ -24,6 +25,7 @@ export default function RecommendationsPanel({ result }: { result: CoordinationR
             <p className="text-xs text-gray-500 mt-1">
               Option-specific risk and duration: not assessed.
             </p>
+            <PrepareProposalButton projectId={result.project_id} optionKey={option.option_key} />
           </div>
         ))}
       </div>

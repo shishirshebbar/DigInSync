@@ -15,13 +15,21 @@ def _uuid() -> str:
 
 
 async def create_project(db: AsyncSession, payload: ProjectCreate) -> Project:
+    segment = None
+    if payload.road_segment_id:
+        segment = await db.get(RoadSegment, payload.road_segment_id)
+        if segment is None or segment.geometry is None:
+            from fastapi import HTTPException
+            raise HTTPException(422, "Selected road segment is unavailable. Select another road or continue without a location.")
     duration = (payload.end_date - payload.start_date).days
     project = Project(
         id=_uuid(),
         organization=payload.organization,
         project_type=payload.project_type,
         description=payload.description,
-        road_name=payload.road_name,
+        road_name=segment.road_name if segment else payload.road_name,
+        road_segment_id=segment.id if segment else None,
+        geometry=segment.geometry if segment else None,
         start_date=payload.start_date,
         end_date=payload.end_date,
         duration_days=duration,

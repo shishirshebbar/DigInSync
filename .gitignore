@@ -34,6 +34,8 @@ frontend/.next/
 frontend/out/
 frontend/.vercel/
 frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -67,3 +69,4 @@ Thumbs.db
 *.env.docker
 
 PROGRESS.md
+AGENTS.md

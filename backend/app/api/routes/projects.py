@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from app.schemas.map import ProjectCatalog, ProjectMap
+from app.services import map_service
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectExtract, ProjectExtractRequest
@@ -6,6 +8,25 @@ from app.llm.provider import ExtractionError
 from app.services import project_service
 
 router = APIRouter()
+
+
+@router.get("/catalog", response_model=ProjectCatalog)
+async def catalog(q: str = Query(default="", max_length=200), limit: int = Query(default=25, ge=1, le=100),
+                  offset: int = Query(default=0, ge=0), db: AsyncSession = Depends(get_db)):
+    return await map_service.catalog(db, q, limit, offset)
+
+
+@router.get("/{project_id}/map", response_model=ProjectMap)
+async def project_map(project_id: str, db: AsyncSession = Depends(get_db)):
+    return await map_service.project_map(db, project_id)
+
+
+@router.get("/{project_id}/coordination-plans")
+async def list_project_proposals(project_id: str, db: AsyncSession = Depends(get_db)):
+    from app.services import proposal_service
+    if await project_service.get_project(db, project_id) is None:
+        raise HTTPException(404, "Project not found")
+    return await proposal_service.list_plans(db, project_id)
 
 
 @router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)

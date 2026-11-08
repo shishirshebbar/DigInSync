@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { cloneElement, useId, useState } from "react";
 import { api } from "@/lib/api";
 import type { ExtractedProject } from "@/types";
+import RoadPicker from "./RoadPicker";
 
 interface Props {
   project: ExtractedProject;
@@ -20,7 +21,7 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
   const [error, setError] = useState<string | null>(null);
 
   function update(field: keyof ExtractedProject, value: string | number | null) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value, ...(field === "road_name" ? { road_segment_id: null } : {}) }));
   }
 
   async function handleConfirm() {
@@ -45,6 +46,7 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
         project_type: form.project_type,
         description: form.description.trim(),
         road_name: form.road_name.trim(),
+        road_segment_id: form.road_segment_id ?? null,
         start_date: form.start_date,
         end_date: form.end_date,
         length_m: form.length_m,
@@ -112,6 +114,7 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
         </Field>
       </div>
 
+      <RoadPicker name={form.road_name ?? ""} selectedId={form.road_segment_id} onSelect={(road) => setForm((prev) => ({ ...prev, road_segment_id: road?.id ?? null, ...(road ? { road_name: road.properties.road_name } : {}) }))} />
       <div className="mt-4">
         <Field label="Project description">
           <textarea className="input w-full" rows={3} value={form.description ?? ""}
@@ -139,11 +142,12 @@ export default function ProjectConfirmation({ project, onConfirmed, onBack }: Pr
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactElement<{ id?: string }> }) {
+  const id = useId();
   return (
-    <label className="block">
-      <span className="text-xs font-medium text-gray-600 mb-1 block">{label}</span>
-      {children}
-    </label>
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-gray-600 mb-1 block">{label}</label>
+      {cloneElement(children, { id })}
+    </div>
   );
 }
