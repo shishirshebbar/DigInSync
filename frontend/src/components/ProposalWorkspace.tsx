@@ -74,7 +74,7 @@ export default function ProposalWorkspace({ id }: { id: string }) {
         : "draft";
   const editable = plan?.status === "DRAFT" && config?.enabled === true;
   const validation = validateProposal(content);
-  useUnloadWarning(dirty);
+  useUnloadWarning(`proposal:${id}`, dirty);
   useEffect(() => {
     dirtyRef.current = dirty;
   }, [dirty]);

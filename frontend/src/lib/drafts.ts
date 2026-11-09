@@ -12,6 +12,19 @@ import {
 // Visit-only drafts. No browser storage, autosave, or server-side draft persistence.
 const drafts = new Map<string, unknown>();
 const listeners = new Map<string, Set<() => void>>();
+const dirtyDrafts = new Set<string>();
+
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  event.preventDefault();
+}
+
+export function setDraftDirty(key: string, dirty: boolean) {
+  if (typeof window === "undefined") return;
+  if (dirty) dirtyDrafts.add(key);
+  else dirtyDrafts.delete(key);
+  if (dirtyDrafts.size) window.addEventListener("beforeunload", warnBeforeUnload);
+  else window.removeEventListener("beforeunload", warnBeforeUnload);
+}
 const subscribeHydration = () => () => {};
 export function useHydrated() {
   return useSyncExternalStore(
@@ -54,13 +67,8 @@ export function clearDraft(key: string) {
   listeners.get(key)?.forEach((listener) => listener());
 }
 
-export function useUnloadWarning(dirty: boolean) {
+export function useUnloadWarning(key: string, dirty: boolean) {
   useEffect(() => {
-    if (!dirty) return;
-    function warn(event: BeforeUnloadEvent) {
-      event.preventDefault();
-    }
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+    setDraftDirty(key, dirty);
+  }, [key, dirty]);
 }

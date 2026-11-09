@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import type { ExtractedProject } from "@/types";
-import { clearDraft, useMemoryState, useUnloadWarning, useHydrated } from "@/lib/drafts";
+import { clearDraft, setDraftDirty, useMemoryState, useUnloadWarning, useHydrated } from "@/lib/drafts";
 import { useRequestGuard } from "@/lib/use-request-guard";
 import RoadPicker from "./RoadPicker";
 import { Field } from "./FormField";
@@ -22,6 +23,11 @@ export const blankProject: ExtractedProject = {
   road_segment_id: null,
 };
 type FormField = Exclude<keyof ExtractedProject, "road_segment_id">;
+type Submission =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "saved"; id: string }
+  | { status: "failed"; message: string };
 const order: FormField[] = [
   "organization",
   "project_type",
@@ -71,14 +77,15 @@ export default function ProjectConfirmation({
   const hydrated = useHydrated();
   const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [submission, setSubmission] = useMemoryState<Submission>("new-project:submission", { status: "idle" });
+  const busy = submission.status === "saving";
   const [error, setError] = useState<string | null>(null);
   const [discard, setDiscard] = useState(false);
   const beginRequest = useRequestGuard();
   const errors = validate(form);
   const invalid = order.find((field) => errors[field]);
   const dirty = Object.values(form).some((value) => value != null && value !== "");
-  useUnloadWarning(dirty);
+  useUnloadWarning("new-project", dirty);
   function update(field: keyof ExtractedProject, value: string | number | null) {
     setError(null);
     setForm((previous) => ({
@@ -106,7 +113,7 @@ export default function ProjectConfirmation({
       return;
     }
     const active = beginRequest();
-    setBusy(true);
+    setSubmission({ status: "saving" });
     try {
       const created = (await api.createProject({
         organization: form.organization?.trim(),
@@ -119,16 +126,14 @@ export default function ProjectConfirmation({
         length_m: form.length_m,
         lane_closure: form.lane_closure,
       })) as { id: string };
-      if (active()) {
-        setForm(blankProject);
-        clearDraft("new-project");
-        onConfirmed(form, created.id);
-      }
+      setForm(blankProject);
+      clearDraft("new-project");
+      setDraftDirty("new-project", false);
+      setSubmission({ status: "saved", id: created.id });
+      if (active()) onConfirmed(form, created.id);
     } catch (failure) {
-      if (active())
-        setError(failure instanceof Error ? failure.message : "Unable to save project.");
-    } finally {
-      if (active()) setBusy(false);
+      const message = failure instanceof Error ? failure.message : "Unable to save project.";
+      setSubmission({ status: "failed", message });
     }
   }
   return (
@@ -297,6 +302,14 @@ export default function ProjectConfirmation({
       {(error || (submitted && invalid)) && (
         <Notice tone="error" alert>
           {error ?? errors[invalid!]}
+        </Notice>
+      )}
+      {submission.status === "failed" && (
+        <Notice tone="error" alert>{submission.message}</Notice>
+      )}
+      {submission.status === "saved" && (
+        <Notice tone="success">
+          Project saved. <Link className="text-link" href={`/projects/${encodeURIComponent(submission.id)}`}>Open saved project</Link>.
         </Notice>
       )}
       <div className="action-bar">

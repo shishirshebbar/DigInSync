@@ -15,6 +15,7 @@ interface Props {
   initialEndDate: string;
   organization: string;
   projectType: string;
+  analysisBusy: boolean;
 }
 
 export default function WhatIfSimulator({
@@ -23,16 +24,19 @@ export default function WhatIfSimulator({
   initialEndDate,
   organization,
   projectType,
+  analysisBusy,
 }: Props) {
   const [startDate, setStartDate] = useMemoryState(
     `simulation:${projectId}:start`,
     initialStartDate,
   );
   const [endDate, setEndDate] = useMemoryState(`simulation:${projectId}:end`, initialEndDate);
-  const [result, setResult] = useMemoryState<SimulationResponse | null>(
+  const [revision] = useMemoryState(`simulation:${projectId}:revision`, 0);
+  const [storedResult, setResult] = useMemoryState<{ revision: number; response: SimulationResponse } | null>(
     `simulation:${projectId}:result`,
     null,
   );
+  const result = storedResult?.revision === revision ? storedResult.response : null;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const beginRequest = useRequestGuard();
@@ -50,7 +54,7 @@ export default function WhatIfSimulator({
       const response = await api.simulate(projectId, [
         { project_id: projectId, new_start_date: startDate, new_end_date: endDate },
       ]);
-      if (current()) setResult(response);
+      if (current()) setResult({ revision, response });
     } catch (err: unknown) {
       if (current()) setError(err instanceof Error ? err.message : "Simulation failed.");
     } finally {
@@ -94,13 +98,18 @@ export default function WhatIfSimulator({
         </label>
       </div>
       <div className="flex gap-3 mb-6">
-        <button onClick={handleSimulate} disabled={loading} className="btn-primary">
+        <button onClick={handleSimulate} disabled={loading || analysisBusy} className="btn-primary">
           {loading ? "Running…" : "Run simulation"}
         </button>
       </div>
       {error && (
         <p role="alert" className="text-sm text-red-600 mb-4">
           {error}
+        </p>
+      )}
+      {storedResult && !result && (
+        <p role="status" className="text-sm text-amber-900 mb-4">
+          Analysis was refreshed. Run the simulation again to review current results before preparing a proposal.
         </p>
       )}
       {result && (

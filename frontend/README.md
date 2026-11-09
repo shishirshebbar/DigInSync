@@ -37,14 +37,19 @@ unchecked by default, and null suggestions never replace entered information.
 
 Project workspaces have Analysis, Schedule comparison, Coordination, and
 Proposals sections. Section links retain inputs and results without rerunning
-analysis. Schedule comparisons remain read-only. Proposal workspaces separate
+analysis. Refreshing or reloading project analysis, retrying an analysis
+request, or requesting coordination invalidates an earlier schedule comparison;
+run it again before preparing a proposal. Schedule comparisons remain read-only.
+Changes made elsewhere cannot be detected automatically, so refresh and rerun
+before relying on a comparison. Proposal workspaces separate
 Draft, Review of the saved revision, and persistent Decision history. Approved
 workplans have a dedicated read-only page.
 
 Unsaved project fields and proposal edits are kept in memory across internal
 navigation during the browser visit. They are not autosaved or stored in browser
-storage. Reloading or closing the page warns when the current editor is dirty;
-explicit discard asks for confirmation. Review always shows the saved proposal,
+storage. Reloading or closing the page warns while any project or proposal
+draft has unsaved edits, even after navigating away; browser restrictions may
+affect the warning. Explicit discard asks for confirmation. Review always shows the saved proposal,
 and unsaved edits cannot be approved. Data context contains coverage counts and
 the source-specific ward lookup. It does not change project analysis.
 
@@ -74,6 +79,8 @@ If a save or decision response is lost, check saved records before resubmitting.
 The frontend never automatically retries mutations. Confirmed mutations remain
 visible even if a subsequent read fails. Provider failures retain manual entry
 and deterministic coordination options.
+If a project save completes after navigating away, returning to New project
+shows a link to the saved record; a failed save retains the draft and error.
 
 ## Verification
 
@@ -84,10 +91,12 @@ npm.cmd run lint
 npm.cmd run build
 # Start the frontend before running browser checks.
 $env:E2E_BASE_URL = "http://localhost:3000"
-npm.cmd run test:e2e -- tests/process-visibility.spec.ts tests/road-preview.spec.ts tests/ux-redesign.spec.ts
+npm.cmd run test:e2e -- draft-freshness.spec.ts process-visibility.spec.ts road-preview.spec.ts ux-redesign.spec.ts
 ```
 
-The process-visibility tests use controlled API responses for concurrency,
+The draft-freshness tests cover navigation, late saves, unload protection and
+simulation invalidation with controlled responses. The process-visibility tests
+use controlled API responses for concurrency,
 provider errors, recovery, data limitations, keyboard focus, and mobile layouts.
 The UX suite also checks visit-only drafts, selective AI application, task
 validation, legacy links, responsive screenshots, and axe accessibility rules.

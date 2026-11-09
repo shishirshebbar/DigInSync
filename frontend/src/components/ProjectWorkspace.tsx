@@ -35,6 +35,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
   const [errors, setErrors] = useState<Partial<Record<Resource, string>>>({});
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [, setSimulationRevision] = useMemoryState(`simulation:${id}:revision`, 0);
   const [selected, setSelected] = useState<string | null>(null);
   const [coordination, setCoordination] = useMemoryState<CoordinationResult | null>(
     `coordination:${id}`,
@@ -73,6 +74,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     async function load() {
+      setSimulationRevision((revision) => revision + 1);
       setBusy(true);
       setErrors({});
       async function one(key: Resource) {
@@ -97,10 +99,11 @@ export default function ProjectWorkspace({ id }: { id: string }) {
     return () => {
       active = false;
     };
-  }, [fetchResource, refresh, apply]);
+  }, [fetchResource, refresh, apply, setSimulationRevision]);
 
   async function retry(key: Resource) {
     const current = beginRetry();
+    setSimulationRevision((revision) => revision + 1);
     setBusy(true);
     try {
       const response = await fetchResource(key);
@@ -116,6 +119,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
   }
   async function coordinate(useAi: boolean) {
     const current = beginCoordination();
+    setSimulationRevision((revision) => revision + 1);
     setCoordBusy(true);
     setCoordError(null);
     try {
@@ -400,6 +404,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
             initialEndDate={project.end_date}
             organization={project.organization}
             projectType={project.project_type}
+            analysisBusy={busy || coordBusy}
           />
         )}
       </div>

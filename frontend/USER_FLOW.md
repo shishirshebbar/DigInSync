@@ -87,7 +87,11 @@ status visible. Section navigation separates four tasks:
 | Proposals | Find and open saved proposals belonging to this project. | Opening a proposal does not change it. |
 
 Moving between sections retains inputs and results without automatically
-rerunning analysis. **Refresh analysis** explicitly requests fresh results.
+rerunning analysis. **Refresh analysis** explicitly requests fresh results and
+invalidates the previous schedule comparison. Rerun the comparison before
+preparing a proposal. Analysis retries, coordination requests and returning to a
+reloaded workspace also invalidate the comparison. Changes elsewhere cannot be
+detected automatically; refresh and rerun before relying on an old comparison.
 
 **Outcome:** evidence for review and, when requested, a saved coordination draft.
 
