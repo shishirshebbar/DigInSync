@@ -10,6 +10,8 @@ import RecommendationsPanel from "./RecommendationsPanel";
 import WhatIfSimulator from "./WhatIfSimulator";
 import ProjectMap from "./ProjectMap";
 import ScheduleTimeline from "./ScheduleTimeline";
+import WorkflowTracker from "./WorkflowTracker";
+import { useRequestGuard } from "@/lib/use-request-guard";
 
 type Resource = "project" | "map" | "conflicts" | "risk";
 const message = (error: unknown) => error instanceof Error ? error.message : "Request failed. Please retry.";
@@ -27,6 +29,8 @@ export default function ProjectWorkspace({ id }: { id: string }) {
   const [coordError, setCoordError] = useState<string | null>(null);
   const [coordBusy, setCoordBusy] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
+  const beginRetry = useRequestGuard();
+  const beginCoordination = useRequestGuard();
 
   const fetchResource = useCallback(async (key: Resource) => {
     if (key === "project") return { key, value: await api.getProject(id) } as const;
@@ -58,16 +62,18 @@ export default function ProjectWorkspace({ id }: { id: string }) {
   }, [fetchResource, refresh, apply]);
 
   async function retry(key: Resource) {
+    const current = beginRetry();
     setBusy(true);
-    try { apply(await fetchResource(key)); setErrors((previous) => ({ ...previous, [key]: undefined })); }
-    catch (error) { setErrors((previous) => ({ ...previous, [key]: message(error) })); }
-    finally { setBusy(false); }
+    try { const response = await fetchResource(key); if (current()) { apply(response); setErrors((previous) => ({ ...previous, [key]: undefined })); } }
+    catch (error) { if (current()) setErrors((previous) => ({ ...previous, [key]: message(error) })); }
+    finally { if (current()) setBusy(false); }
   }
   async function coordinate(useAi: boolean) {
+    const current = beginCoordination();
     setCoordBusy(true); setCoordError(null);
-    try { setCoordination(await api.coordinate(id, useAi)); }
-    catch (error) { setCoordError(message(error)); }
-    finally { setCoordBusy(false); }
+    try { const response = await api.coordinate(id, useAi); if (current()) setCoordination(response); }
+    catch (error) { if (current()) setCoordError(message(error)); }
+    finally { if (current()) setCoordBusy(false); }
   }
   const overlappingIds = useMemo(() => conflicts?.conflicts.filter((item) => item.temporal_overlap).map((item) => item.project_b_id) ?? [], [conflicts]);
   const timelines = useMemo(() => mapData?.features.filter((item) => item.properties.start_date && item.properties.end_date).map((item) => ({ id: item.id,
@@ -80,6 +86,9 @@ export default function ProjectWorkspace({ id }: { id: string }) {
         <p className="mt-2 text-slate-600">Review locations, compare schedules, and coordinate with the responsible teams.</p></div>
       <button className="btn-secondary" disabled={busy} onClick={() => { setCoordination(null); setRefresh((value) => value + 1); }}>{busy ? "Refreshing…" : "Refresh analysis"}</button>
     </header>
+    <WorkflowTracker mode="project" projectId={id} />
+    {busy && (conflicts || risk || mapData) && <p className="text-sm text-amber-900">Refreshing analysis. Previously loaded results remain visible until replaced.</p>}
+    {!busy && Object.values(errors).some(Boolean) && (conflicts || risk || mapData) && <p className="text-sm text-amber-900">Some results could not be refreshed. Previously loaded panels may be out of date; review the operation details and retry the affected request.</p>}
     {busy && <p role="status" className="text-sm text-slate-600">Loading available project data and analysis…</p>}
     {Object.entries(errors).map(([key, error]) => error && <div role="alert" key={key} className="notice-error">
       <strong>{key[0].toUpperCase() + key.slice(1)}:</strong> {error} <button disabled={busy} className="underline" onClick={() => void retry(key as Resource)}>Retry {key}</button>
@@ -110,6 +119,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
       <div className="mt-5 border-t pt-5"><ScheduleTimeline items={timelines} /></div>
     </section>}
     <div className="grid gap-5 lg:grid-cols-2">{conflicts && <ConflictPanel result={conflicts} />}{risk && <RiskPanel result={risk} />}</div>
+    {errors.conflicts && risk && <p className="text-sm text-amber-900">Conflict analysis did not complete. The indicator may use previously stored candidate counts; retry conflicts and then refresh the indicator before relying on this analysis.</p>}
     {project && <section className="panel space-y-4" aria-label="Coordination actions">
       <h2 className="text-xl font-semibold">Find a workable schedule</h2>
       <p className="text-sm text-slate-600">Review deterministic templates locally. Optional AI explanations send aggregate counts, overlap duration, location basis and the baseline experimental indicator to the configured provider.</p>
@@ -119,6 +129,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
         <button className="btn-secondary" onClick={() => setShowSimulator((value) => !value)}>Try a schedule change</button>
       </div>
       {coordError && <p role="alert" className="text-red-700">{coordError}</p>}
+      {coordination && (coordBusy || coordError) && <p className="text-sm text-amber-900">Previously prepared coordination options remain visible and may be out of date.</p>}
     </section>}
     {showSimulator && project && <WhatIfSimulator projectId={id} initialStartDate={project.start_date} initialEndDate={project.end_date} organization={project.organization} projectType={project.project_type} onBack={() => setShowSimulator(false)} />}
     {coordination && <RecommendationsPanel result={coordination} />}

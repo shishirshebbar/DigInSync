@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { ImpactMetrics, ProjectCatalog, ProposalSummary } from "@/types";
+import WorkflowTracker from "@/components/WorkflowTracker";
+import WardContextPanel from "@/components/WardContextPanel";
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<ImpactMetrics | null>(null);
   const [catalog, setCatalog] = useState<ProjectCatalog | null>(null);
-  const [proposals, setProposals] = useState<ProposalSummary[]>([]);
+  const [proposals, setProposals] = useState<ProposalSummary[] | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [refresh, setRefresh] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -35,6 +37,8 @@ export default function Dashboard() {
     <header className="flex flex-wrap justify-between items-start gap-4"><div><p className="eyebrow">Coordination overview</p><h1 className="text-3xl font-bold tracking-tight">Project dashboard</h1><p className="mt-2 text-slate-600">Saved work, review progress, and location coverage.</p></div>
       <button className="btn-secondary" disabled={loading} onClick={() => setRefresh((value) => value + 1)}>Refresh dashboard</button></header>
     {loading && <p role="status" className="text-sm text-slate-600">Loading dashboard…</p>}
+    <WorkflowTracker mode="dashboard" />
+    {(metrics || catalog || proposals) && (loading || Object.keys(errors).length > 0) && <p className="text-sm text-amber-900">Previously loaded dashboard results remain visible. Any section being refreshed or reporting an error may be out of date.</p>}
     {Object.entries(errors).map(([key, error]) => <p key={key} role="alert" className="notice-error">{key}: {error} <button className="underline" onClick={() => setRefresh((value) => value + 1)}>Retry dashboard</button></p>)}
     {metrics && <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Workflow totals">
@@ -74,12 +78,13 @@ export default function Dashboard() {
           <span>{offset + 1}–{Math.min(offset + 25, catalog.total)} of {catalog.total}</span><button disabled={loading || offset + 25 >= catalog.total} onClick={() => setOffset(offset + 25)}>Next projects</button></div>}
       </section>
       <section className="panel min-w-0"><h2 className="text-xl font-semibold mb-4">Recent proposals</h2>
-        {proposals.length === 0 && <p className="text-sm text-slate-600">No proposals yet. Review coordination options in a project workspace.</p>}
-        <ul className="divide-y">{proposals.map((plan) => <li className="py-3 text-sm" key={plan.id}><Link className="text-blue-800 underline" href={`/proposals?plan=${encodeURIComponent(plan.id)}`}>{plan.option_name}</Link><p className="text-xs text-slate-500 mt-1">{plan.status} · revision {plan.revision}</p></li>)}</ul>
+        {proposals?.length === 0 && <p className="text-sm text-slate-600">No proposals yet. Review coordination options in a project workspace.</p>}
+        <ul className="divide-y">{proposals?.map((plan) => <li className="py-3 text-sm" key={plan.id}><Link className="text-blue-800 underline" href={`/proposals?plan=${encodeURIComponent(plan.id)}`}>{plan.option_name}</Link><p className="text-xs text-slate-500 mt-1">{plan.status} · revision {plan.revision}</p></li>)}</ul>
         <Link href="/proposals" className="text-sm text-blue-700 underline">View saved proposals</Link>
         <div className="mt-5 border-t pt-4"><h3 className="font-semibold mb-2">Compare a schedule</h3><p className="text-sm text-slate-600">Open a project and choose “Try a schedule change” to compare overlapping schedules, overlap days and the experimental indicator.</p></div>
       </section>
     </div>
+    <WardContextPanel />
   </main>;
 }
 

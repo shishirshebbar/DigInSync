@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import type { ExtractedProject } from "@/types";
+import { useRequestGuard } from "@/lib/use-request-guard";
 
 interface Props {
   onExtracted: (project: ExtractedProject) => void;
@@ -12,19 +13,21 @@ export default function ProjectInputForm({ onExtracted }: Props) {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const beginRequest = useRequestGuard();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!description.trim()) return;
+    const current = beginRequest();
     setLoading(true);
     setError(null);
     try {
       const extracted = await api.extractProject(description);
-      onExtracted(extracted);
+      if (current()) onExtracted(extracted);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to extract project. Please try again.");
+      if (current()) setError(err instanceof Error ? err.message : "Failed to extract project. Please try again.");
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   }
 

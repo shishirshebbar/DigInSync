@@ -33,6 +33,7 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
                   {c.severity}
                 </span>
               </div>
+              <p className="text-xs text-slate-600">Returned score: {c.conflict_score}/100 · {c.overlap_days} overlapping day(s). End dates are exclusive.</p>
               <div className="text-xs text-gray-500 flex gap-4">
                 {c.temporal_overlap && <span>⏱ {c.overlap_days}-day overlap</span>}
                 {c.spatial_overlap && <span>📍 {result.location_basis === "road_name" ? "Same road name (unverified location)" : "Within specified radius"}</span>}

@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { SimulationResponse, SimulationResult } from "@/types";
 import PrepareProposalButton from "@/components/PrepareProposalButton";
 import ScheduleTimeline from "./ScheduleTimeline";
+import { useRequestGuard } from "@/lib/use-request-guard";
 
 interface Props {
   projectId: string;
@@ -21,6 +22,7 @@ export default function WhatIfSimulator({ projectId, initialStartDate, initialEn
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const beginRequest = useRequestGuard();
 
   async function handleSimulate() {
     setResult(null);
@@ -28,16 +30,18 @@ export default function WhatIfSimulator({ projectId, initialStartDate, initialEn
       setError("Enter both dates; the end date must be after the start date.");
       return;
     }
+    const current = beginRequest();
     setLoading(true);
     setError(null);
     try {
-      setResult(await api.simulate(projectId, [
+      const response = await api.simulate(projectId, [
         { project_id: projectId, new_start_date: startDate, new_end_date: endDate },
-      ]));
+      ]);
+      if (current()) setResult(response);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Simulation failed.");
+      if (current()) setError(err instanceof Error ? err.message : "Simulation failed.");
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   }
 

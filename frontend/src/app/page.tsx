@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ProjectInputForm from "@/components/ProjectInputForm";
 import ProjectConfirmation from "@/components/ProjectConfirmation";
 import type { ExtractedProject } from "@/types";
+import WorkflowTracker from "@/components/WorkflowTracker";
 
 export default function Home() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function Home() {
     <ol aria-label="Project workflow" className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm text-slate-600">
       {["1. Enter project", "2. Review location", "3. Compare schedules", "4. Review proposal"].map((step) => <li className="rounded-lg border bg-white p-3" key={step}>{step}</li>)}
     </ol>
+    <WorkflowTracker mode="entry" detailsReady={project !== null} />
     {project ? <ProjectConfirmation project={project} onBack={() => setProject(null)} onConfirmed={(_, id) => router.push(`/projects/${encodeURIComponent(id)}`)} />
       : <ProjectInputForm onExtracted={setProject} />}
     <p className="text-xs text-slate-500">Local demo. Locations depend on imported data and user confirmation. Risk indicators are experimental; approvals do not authorize construction.</p>

@@ -33,6 +33,7 @@ export interface ConflictResult {
 }
 
 export interface RiskResult {
+  features_used?: RiskFeatures | null;
   project_id: string;
   risk_score: number;
   risk_level: "LOW" | "MEDIUM" | "HIGH";
@@ -41,6 +42,28 @@ export interface RiskResult {
   road_segment_matched: boolean;
   historical_features_available: boolean;
   warnings: string[];
+}
+
+export interface RiskFeatures {
+  road_width: number | null;
+  road_type: string | null;
+  historical_work_orders: number;
+  historical_road_repairs: number;
+  pothole_count: number;
+  grievance_count: number;
+  existing_projects: number;
+  nearby_projects: number;
+  project_duration: number;
+  lane_closure: number;
+  project_length: number;
+  number_of_overlapping_utilities: number;
+}
+
+export interface WardContext {
+  dataset: "work_orders" | "grievances";
+  ward: string;
+  record_count: number;
+  geographic_precision: "ward";
 }
 
 export interface CoordinationOption {

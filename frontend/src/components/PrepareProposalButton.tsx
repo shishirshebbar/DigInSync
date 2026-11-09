@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type { DraftTask, OptionKey } from "@/types";
+import { useRequestGuard } from "@/lib/use-request-guard";
 
 export default function PrepareProposalButton({ projectId, optionKey, tasks = [], label = "Prepare proposal" }: {
   projectId: string; optionKey: OptionKey; tasks?: DraftTask[]; label?: string;
@@ -11,16 +12,17 @@ export default function PrepareProposalButton({ projectId, optionKey, tasks = []
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const beginRequest = useRequestGuard();
 
   async function prepare() {
+    const current = beginRequest();
     setLoading(true);
     setError(null);
     try {
       const proposal = await api.createProposal(projectId, optionKey, tasks);
-      router.push(`/proposals?plan=${encodeURIComponent(proposal.id)}`);
+      if (current()) router.push(`/proposals?plan=${encodeURIComponent(proposal.id)}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Could not save the proposal.");
-      setLoading(false);
+      if (current()) { setError(err instanceof Error ? err.message : "Could not save the proposal."); setLoading(false); }
     }
   }
 
