@@ -1,6 +1,9 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 import type { AuditEvent, ConflictResult, CoordinationResult, DemoConfig, ExtractedProject, OptionKey, Proposal, ProposalContent, ProposalSummary, RiskResult, ScheduleChange, SimulationResponse, Workplan } from "@/types";
 import type { ImpactMetrics, MapCollection, ProjectCatalog, ProjectMapData, SavedProject } from "@/types";
+import type { WardContext } from "@/types";
+import { beginActivity, completeActivity, failActivity } from "@/lib/activity";
+import { ApiError, recoveryMessage } from "@/lib/api-errors";
 
 const pending = new Map<string, Promise<unknown>>();
 function once<T>(key: string, action: () => Promise<T>): Promise<T> {
@@ -12,25 +15,37 @@ function once<T>(key: string, action: () => Promise<T>): Promise<T> {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  if (!res.ok) {
-    const body: unknown = await res.json().catch(() => null);
-    if (body && typeof body === "object" && "detail" in body && typeof body.detail === "string") {
-      throw new Error(body.detail);
+  const activityId = beginActivity(path, options);
+  const mutation = options?.method === "PATCH" || (options?.method === "POST" &&
+    (/^\/api\/coordination-plans(?:\/|$)/.test(path) || path === "/api/projects/" || path === "/api/conflicts/analyze" || path === "/api/risk/predict" || path === "/api/coordinate/"));
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+    if (!res.ok) {
+      const body: unknown = await res.json().catch(() => null);
+      let detail = `Request failed (HTTP ${res.status}).`;
+      if (body && typeof body === "object" && "detail" in body && typeof body.detail === "string") {
+        detail = body.detail;
+      }
+      if (body && typeof body === "object" && "detail" in body && Array.isArray(body.detail)) {
+        const messages = body.detail.map((item: unknown) => {
+          if (item && typeof item === "object" && "msg" in item && typeof item.msg === "string") return item.msg;
+          return "Invalid field.";
+        });
+        detail = messages.join(" ");
+      }
+      throw new ApiError(`${detail} ${recoveryMessage(res.status, mutation)}`, res.status, mutation && res.status >= 500);
     }
-    if (body && typeof body === "object" && "detail" in body && Array.isArray(body.detail)) {
-      const messages = body.detail.map((item: unknown) => {
-        if (item && typeof item === "object" && "msg" in item && typeof item.msg === "string") return item.msg;
-        return "Invalid field.";
-      });
-      throw new Error(messages.join(" "));
-    }
-    throw new Error(`Request failed (HTTP ${res.status}). Please check the entered details.`);
+    const data: T = await res.json();
+    completeActivity(activityId, data);
+    return data;
+  } catch (error) {
+    const failure = error instanceof ApiError ? error : new ApiError(recoveryMessage(null, mutation), null, mutation);
+    failActivity(activityId, failure.message);
+    throw failure;
   }
-  return res.json() as Promise<T>;
 }
 
 export const api = {
@@ -106,4 +121,7 @@ export const api = {
   proposalEvents: (id: string) => request<AuditEvent[]>(`/api/coordination-plans/${encodeURIComponent(id)}/events`),
 
   getImpact: () => request<ImpactMetrics>("/api/impact/"),
+
+  wardContext: (dataset: WardContext["dataset"], ward: string) =>
+    request<WardContext>(`/api/wards/context?${new URLSearchParams({ dataset, ward })}`),
 };
