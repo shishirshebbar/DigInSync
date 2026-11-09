@@ -220,6 +220,18 @@ export interface ProjectCatalog {
 }
 
 export interface ImpactMetrics {
+  spatial_coverage: {
+    road_segments: number;
+    roads_with_feature_rows: number;
+    work_orders: number;
+    geocoded_work_orders: number;
+    grievances: number;
+    geocoded_grievances: number;
+    road_repairs: number;
+    geocoded_road_repairs: number;
+    potholes: number;
+    geocoded_potholes: number;
+  };
   projects_total: number;
   mapped_projects: number;
   unmapped_projects: number;

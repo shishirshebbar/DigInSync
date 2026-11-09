@@ -122,7 +122,7 @@ def test_persistent_decisions_concurrency_and_atomic_rollback(monkeypatch):
 
         app.dependency_overrides[get_db] = db_override
         try:
-            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test") as client:
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, raise_app_exceptions=False, client=("127.0.0.1", 1234)), base_url="http://localhost") as client:
                 data = {"organization": "Water", "project_type": "water_pipeline", "description": "Test works",
                         "road_name": "Phase 8 test road", "start_date": "2026-11-12", "end_date": "2026-11-18"}
                 response = await client.post("/api/projects/", json=data)
@@ -191,6 +191,21 @@ def test_persistent_decisions_concurrency_and_atomic_rollback(monkeypatch):
                 refreshed = await client.patch(stale_path, json={"expected_revision": 1, "tasks": [TASK], "related_project_ids": [neighbour]})
                 assert refreshed.status_code == 200
                 assert (await client.post(stale_path + '/approve', json={"expected_revision": 2})).status_code == 200
+
+                stale_candidate = await create([TASK])
+                new_project = (await client.post("/api/projects/", json={**data, "organization": "New utility"})).json()["id"]
+                candidate_path = f'/api/coordination-plans/{stale_candidate["id"]}'
+                assert (await client.post(candidate_path + "/approve", json={"expected_revision": 1})).status_code == 409
+                revised = await client.patch(candidate_path, json={"expected_revision": 1, "related_project_ids": [neighbour]})
+                assert revised.status_code == 200
+                async with engine.begin() as connection:
+                    await connection.execute(text("UPDATE projects SET organization='Updated utility' WHERE id=:id"), {"id": new_project})
+                assert (await client.post(candidate_path + "/approve", json={"expected_revision": 2})).status_code == 409
+                revised = await client.patch(candidate_path, json={"expected_revision": 2})
+                assert revised.status_code == 200
+                assert (await client.post(candidate_path + "/approve", json={"expected_revision": 3})).status_code == 200
+                async with engine.begin() as connection:
+                    await connection.execute(text("UPDATE projects SET status='CANCELLED' WHERE id=:id"), {"id": new_project})
 
                 concurrent = await create([TASK])
                 approval_path = f'/api/coordination-plans/{concurrent["id"]}/approve'

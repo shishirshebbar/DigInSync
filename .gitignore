@@ -68,5 +68,4 @@ Thumbs.db
 # ─── Docker ──────────────────────────────────────────────────────────────────
 *.env.docker
 
-PROGRESS.md
 AGENTS.md

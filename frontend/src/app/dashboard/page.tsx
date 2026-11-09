@@ -46,6 +46,17 @@ export default function Dashboard() {
       <section className="panel"><h2 className="text-xl font-semibold mb-4">Proposal review progress</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statuses.map((status) => <div key={status}><p className="text-xs text-slate-500">{status}</p><p className="text-2xl font-semibold">{metrics.proposal_status_counts[status] ?? 0}</p></div>)}
       </div></section>
+      <section className="panel" aria-label="Spatial data coverage">
+        <h2 className="text-xl font-semibold mb-3">Spatial data coverage</h2>
+        <p className="text-sm text-slate-600 mb-3">Counts describe records in this database, not verified completeness or nearby incidents. A road feature row does not establish that its values are complete.</p>
+        <ul className="text-sm space-y-1">
+          <li>Roads with feature rows: {metrics.spatial_coverage.roads_with_feature_rows} / {metrics.spatial_coverage.road_segments}</li>
+          <li>Geocoded work orders: {metrics.spatial_coverage.geocoded_work_orders} / {metrics.spatial_coverage.work_orders}</li>
+          <li>Geocoded grievances: {metrics.spatial_coverage.geocoded_grievances} / {metrics.spatial_coverage.grievances}</li>
+          <li>Geocoded road repairs: {metrics.spatial_coverage.geocoded_road_repairs} / {metrics.spatial_coverage.road_repairs}</li>
+          <li>Geocoded potholes: {metrics.spatial_coverage.geocoded_potholes} / {metrics.spatial_coverage.potholes}</li>
+        </ul>
+      </section>
       <p className="text-sm text-slate-600">Totals describe saved prototype records. Candidate pairs reflect stored analyses and may be stale; they are not current citywide conflicts. Approval does not change original project schedules. Civic savings have not been measured.</p>
     </>}
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">

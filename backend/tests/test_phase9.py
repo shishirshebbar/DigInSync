@@ -91,9 +91,10 @@ def test_roads_maps_catalog_and_workflow_totals(monkeypatch):
                 yield db
         app.dependency_overrides[get_db] = session
         try:
-            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("127.0.0.1", 1234)), base_url="http://localhost") as client:
                 empty = (await client.get("/api/impact/")).json()
                 assert empty["projects_total"] == empty["workplans_generated"] == 0
+                assert all(value == 0 for value in empty["spatial_coverage"].values())
                 assert (await client.get("/api/roads?q=missing")).json()["total"] == 0
                 assert (await client.get("/api/roads")).status_code == 422
                 rows = osm_local.parse_roads(PAYLOAD, BOUNDS)
@@ -138,6 +139,8 @@ def test_roads_maps_catalog_and_workflow_totals(monkeypatch):
                     await db.execute(text("""INSERT INTO coordination_plans (id, project_id, option_name, description, tradeoffs, status)
                         SELECT 'draft-' || n, :id, 'Review', 'Description', '', 'DRAFT' FROM generate_series(1, 105) n"""), {"id": mapped["id"]})
                 metrics = (await client.get('/api/impact/')).json()
+                assert metrics["spatial_coverage"]["road_segments"] == 1
+                assert metrics["spatial_coverage"]["roads_with_feature_rows"] == 0
                 assert metrics["projects_total"] == 3 and metrics["mapped_projects"] == 2 and metrics["unmapped_projects"] == 1
                 assert metrics["workplans_generated"] == 1 and metrics["task_count"] == 3
                 assert metrics["proposal_status_counts"] == {"APPROVED": 1, "DRAFT": 105}

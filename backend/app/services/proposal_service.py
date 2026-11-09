@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -71,8 +71,26 @@ async def _capture(db: AsyncSession, project_id: str, related_ids: list[str]) ->
     warnings = [warning for warning in analysis.warnings if not warning.startswith("Simulation only;")]
     return [project_snapshot(project) for project in projects], {
         "baseline": analysis.before.model_dump(mode="json"), "location_basis": analysis.location_basis,
+        "candidate_projects": [project_snapshot(item) for item in sorted(neighbours, key=lambda item: item.id)],
         "warnings": [*warnings, WORKPLAN_WARNING],
     }
+
+
+async def _lock_project_catalog(db: AsyncSession) -> None:
+    # Prevent candidate inserts or updates between the review check and commit.
+    await db.execute(text("LOCK TABLE projects IN SHARE MODE"))
+
+
+def _conflict_snapshot(analysis: dict) -> tuple:
+    baseline = analysis.get("baseline")
+    candidates = analysis.get("candidate_projects")
+    if not isinstance(baseline, dict) or not isinstance(baseline.get("conflicts"), list) or not isinstance(candidates, list):
+        raise HTTPException(409, "The reviewed conflict analysis is missing. Save and review the draft again.")
+    return (
+        analysis.get("location_basis"),
+        sorted(candidates, key=lambda item: item["id"]),
+        sorted(baseline["conflicts"], key=lambda item: (item["project_a_id"], item["project_b_id"])),
+    )
 
 
 def _event(db: AsyncSession, plan: CoordinationPlan, action: str, actor: str, details: dict) -> None:
@@ -110,6 +128,7 @@ async def list_plans(db: AsyncSession, project_id: str | None = None) -> list[di
 
 async def create(db: AsyncSession, payload: ProposalCreate) -> ProposalRead:
     actor = reviewer()
+    await _lock_project_catalog(db)
     if await db.get(Project, payload.project_id) is None:
         raise HTTPException(404, "Project not found.")
     snapshots, analysis = await _capture(db, payload.project_id, payload.related_project_ids)
@@ -133,6 +152,7 @@ async def update(db: AsyncSession, plan_id: str, payload: ProposalUpdate) -> Pro
     _check_revision(plan, payload.expected_revision)
     if plan.status != "DRAFT":
         raise HTTPException(409, "Only drafts can be modified. Prepare a new proposal for further changes.")
+    await _lock_project_catalog(db)
     content = ProposalContent.model_validate({
         "notes": plan.notes, "tasks": plan.draft_tasks,
         "related_project_ids": [item["id"] for item in plan.project_snapshots if item["id"] != plan.project_id],
@@ -166,9 +186,19 @@ async def approve(db: AsyncSession, plan_id: str, payload: PlanDecision):
         raise HTTPException(422, "Add and save at least one confirmed task before approving.")
     if not plan.project_snapshots:
         raise HTTPException(409, "The reviewed project snapshot is missing. Save a new draft.")
+    await _lock_project_catalog(db)
     projects = await _projects(db, [item["id"] for item in plan.project_snapshots])
     if [project_snapshot(project) for project in projects] != plan.project_snapshots:
         raise HTTPException(409, "Participating project details changed. Reload, save and review the draft before approval.")
+    related_ids = [item["id"] for item in plan.project_snapshots if item["id"] != plan.project_id]
+    try:
+        _, current_analysis = await _capture(db, plan.project_id, related_ids)
+    except HTTPException as exc:
+        if exc.status_code == 422:
+            raise HTTPException(409, "Conflict candidates changed. Save and review the draft before approval.") from exc
+        raise
+    if _conflict_snapshot(current_analysis) != _conflict_snapshot(plan.analysis_snapshot):
+        raise HTTPException(409, "Conflict analysis changed. Save and review the draft before approval.")
     now = datetime.now(timezone.utc)
     header = WorkplanHeader(coordination_plan_id=plan.id, project_id=plan.project_id,
                             approved_by=actor, approved_at=now, proposal_revision=plan.revision,
