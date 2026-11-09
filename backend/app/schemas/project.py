@@ -33,6 +33,7 @@ class ProjectExtract(BaseModel):
 
 
 class ProjectCreate(BaseModel):
+    road_segment_id: Optional[str] = Field(default=None, min_length=1, max_length=200)
     organization: str = Field(min_length=1, max_length=200)
     project_type: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1, max_length=4000)
@@ -58,10 +59,17 @@ class ProjectCreate(BaseModel):
 
 class ProjectRead(ProjectCreate):
     id: str
+    road_name: Optional[str] = None
     road_segment_id: Optional[str] = None
     duration_days: int
     status: str
     risk_score: Optional[float] = None
     risk_level: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_project(self):
+        # Reads preserve legacy records, including projects with no recorded road name.
+        # Creation still uses ProjectCreate's required fields and date validation.
+        return self
 
     model_config = {"from_attributes": True}

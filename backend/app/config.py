@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     secret_key: str = "change-me-in-production"
     backend_cors_origins: str = "http://localhost:3000"
+    enable_demo_approvals: bool = False
+    demo_reviewer_id: str = "local-demo-reviewer"
 
     @property
     def cors_origins(self) -> list[str]:

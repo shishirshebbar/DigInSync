@@ -13,6 +13,7 @@ from __future__ import annotations
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.models import Project, RiskPrediction
 from app.schemas.risk import RiskPredictRequest, RiskPredictResponse, RiskFeatures
@@ -42,24 +43,9 @@ async def predict(db: AsyncSession, payload: RiskPredictRequest) -> RiskPredictR
         warnings.append("Model artifact unavailable; this is a deterministic fallback, not an ML prediction.")
 
     # 4. Persist / update risk_prediction
-    existing = await db.execute(
-        select(RiskPrediction).where(RiskPrediction.project_id == project.id)
-    )
-    risk_row = existing.scalar_one_or_none()
-
-    if risk_row:
-        risk_row.risk_score = risk_score
-        risk_row.risk_level = risk_level
-        risk_row.model_version = model_version
-    else:
-        risk_row = RiskPrediction(
-            id=_uuid(),
-            project_id=project.id,
-            risk_score=risk_score,
-            risk_level=risk_level,
-            model_version=model_version,
-        )
-        db.add(risk_row)
+    values = {"risk_score": risk_score, "risk_level": risk_level, "model_version": model_version}
+    await db.execute(insert(RiskPrediction).values(id=_uuid(), project_id=project.id, **values)
+                     .on_conflict_do_update(index_elements=[RiskPrediction.project_id], set_=values))
 
     await db.commit()
 

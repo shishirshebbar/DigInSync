@@ -24,26 +24,7 @@ async def coordinate(db: AsyncSession, payload: CoordinateRequest) -> Coordinate
         "baseline_risk_level": risk.risk_level,
     }
 
-    options = [
-        CoordinationOption(
-            option_name="Review sequencing",
-            description="Review whether the works can be scheduled in sequence with the relevant teams.",
-            tradeoffs="May reduce simultaneous activity, but could delay one or more projects.",
-            schedule_impact="Dates and delay have not been assessed.",
-        ),
-        CoordinationOption(
-            option_name="Explore joint work",
-            description="Ask the responsible teams whether a shared work window or excavation is feasible.",
-            tradeoffs="Could avoid repeated work, but requires technical and organizational agreement.",
-            schedule_impact="A joint schedule has not been agreed or assessed.",
-        ),
-        CoordinationOption(
-            option_name="Retain schedule with coordination",
-            description="Review the existing schedule and coordinate access, traffic management and responsibilities.",
-            tradeoffs="Avoids an assumed delay, but overlapping work may still require mitigation.",
-            schedule_impact="No schedule changes have been evaluated.",
-        ),
-    ]
+    options = coordination_options()
     recommended = "Review sequencing" if overlapping else "Retain schedule with coordination"
     explanation = (
         f"Analysis found {conflicts.conflict_count} candidate project(s), "
@@ -74,3 +55,30 @@ async def coordinate(db: AsyncSession, payload: CoordinateRequest) -> Coordinate
         baseline_risk_score=risk.risk_score,
         warnings=warnings,
     )
+
+
+def coordination_options() -> list[CoordinationOption]:
+    """Stable review templates shared by analysis and saved proposals."""
+    return [
+        CoordinationOption(
+            option_key="review_sequencing",
+            option_name="Review sequencing",
+            description="Review whether the works can be scheduled in sequence with the relevant teams.",
+            tradeoffs="May reduce simultaneous activity, but could delay one or more projects.",
+            schedule_impact="Dates and delay have not been assessed.",
+        ),
+        CoordinationOption(
+            option_key="explore_joint_work",
+            option_name="Explore joint work",
+            description="Ask the responsible teams whether a shared work window or excavation is feasible.",
+            tradeoffs="Could avoid repeated work, but requires technical and organizational agreement.",
+            schedule_impact="A joint schedule has not been agreed or assessed.",
+        ),
+        CoordinationOption(
+            option_key="retain_schedule",
+            option_name="Retain schedule with coordination",
+            description="Review the existing schedule and coordinate access, traffic management and responsibilities.",
+            tradeoffs="Avoids an assumed delay, but overlapping work may still require mitigation.",
+            schedule_impact="No schedule changes have been evaluated.",
+        ),
+    ]

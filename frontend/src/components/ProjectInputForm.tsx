@@ -36,7 +36,9 @@ export default function ProjectInputForm({ onExtracted }: Props) {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <label htmlFor="project-description" className="block text-sm font-medium">Project description for AI extraction</label>
         <textarea
+          id="project-description"
           className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={5}
           placeholder="e.g. We need to replace a 150m water pipeline on 80 Feet Road from November 12 to November 18. One lane will be closed."
@@ -46,7 +48,7 @@ export default function ProjectInputForm({ onExtracted }: Props) {
         />
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+          <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
             {error}
           </p>
         )}

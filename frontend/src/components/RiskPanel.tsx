@@ -24,7 +24,7 @@ export default function RiskPanel({ result }: { result: RiskResult }) {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-3">
+      <div role="meter" aria-label="Experimental risk indicator" aria-valuemin={0} aria-valuemax={100} aria-valuenow={result.risk_score} aria-valuetext={`${Math.round(result.risk_score)} out of 100, ${result.risk_level}. Experimental ${result.model_version === "fallback" ? "deterministic fallback" : "model"}.`} className="w-full bg-gray-200 rounded-full h-3">
         <div
           className={`${c.bar} h-3 rounded-full transition-all duration-500`}
           style={{ width: `${result.risk_score}%` }}
@@ -32,7 +32,7 @@ export default function RiskPanel({ result }: { result: RiskResult }) {
       </div>
 
       <p className="text-xs text-gray-500 mt-2">
-        Model version {result.model_version}
+        {result.model_version === "fallback" ? "Deterministic fallback · model artifact unavailable" : `Model version ${result.model_version}`} · not a disruption probability
       </p>
       <ul className="mt-3 space-y-1 text-sm text-gray-700">
         {result.warnings.map((warning) => <li key={warning}>{warning}</li>)}

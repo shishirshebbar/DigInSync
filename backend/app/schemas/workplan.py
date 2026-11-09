@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -11,6 +11,7 @@ class WorkplanTask(BaseModel):
     end_date: date
     dependency: Optional[str] = None
     status: str
+    notes: str = ""
 
 
 class WorkplanRead(BaseModel):
@@ -18,5 +19,9 @@ class WorkplanRead(BaseModel):
     coordination_plan_id: str
     project_id: str
     tasks: list[WorkplanTask]
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    proposal_revision: int
+    warnings: list[str]
 
     model_config = {"from_attributes": True}

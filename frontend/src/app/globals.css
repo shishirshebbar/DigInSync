@@ -24,6 +24,26 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+.workspace { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+.app-nav { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem max(1rem, calc((100vw - 1168px) / 2)); background: white; border-bottom: 1px solid #e2e8f0; }
+.brand { color: #1d4ed8; font-size: 1.35rem; font-weight: 750; letter-spacing: -0.04em; }
+.brand span { display: block; color: #64748b; font-size: 0.7rem; font-weight: 400; letter-spacing: 0; }
+.eyebrow { color: #0f766e; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem; }
+.panel { border: 1px solid #e2e8f0; border-radius: 1rem; background: white; padding: 1.4rem; box-shadow: 0 2px 6px #0f172a04; }
+.btn-primary, .btn-secondary { border-radius: 0.5rem; padding: 0.6rem 1rem; font-size: 0.875rem; font-weight: 500; min-height: 42px; }
+.btn-primary { color: white; background: #1d4ed8; border: 1px solid #1d4ed8; }
+.btn-secondary { border: 1px solid #cbd5e1; background: white; color: #334155; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.5; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #7c3aed; outline-offset: 3px; }
+.badge { border-radius: 0.3rem; background: #f1f5f9; color: #475569; padding: 0.25rem 0.5rem; font-size: 0.7rem; }
+.notice-error { border: 1px solid #fecaca; border-radius: 0.5rem; padding: 1rem; background: #fef2f2; color: #991b1b; font-size: 0.875rem; }
+.map-frame { height: 360px; width: 100%; border: 1px solid #cbd5e1; border-radius: 0.75rem; background: #e9eff3; z-index: 0; }
+.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 10000; padding: 0.75rem; background: white; border: 2px solid #1d4ed8; }
+.skip-link:focus { top: 0.5rem; }
+@media (max-width: 640px) { .panel { padding: 1rem; } .map-frame { height: 280px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
 .input:focus {
   outline: none;
   border-color: #3b82f6;

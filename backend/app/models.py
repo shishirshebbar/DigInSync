@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 from sqlalchemy import String, Float, Integer, Date, DateTime, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 from app.database import Base
 
@@ -15,6 +16,8 @@ class RoadSegment(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     road_name: Mapped[str] = mapped_column(String, index=True)
+    osm_id: Mapped[str | None] = mapped_column(String)
+    length_m: Mapped[float | None] = mapped_column(Float)
     geometry: Mapped[object] = mapped_column(Geometry("LINESTRING", srid=4326))
     road_type: Mapped[str | None] = mapped_column(String)
     road_width: Mapped[float | None] = mapped_column(Float)
@@ -133,17 +136,54 @@ class CoordinationPlan(Base):
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     option_name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(Text)
-    risk_score: Mapped[float] = mapped_column(Float)
-    estimated_duration: Mapped[int] = mapped_column(Integer)
+    risk_score: Mapped[float | None] = mapped_column(Float)
+    estimated_duration: Mapped[int | None] = mapped_column(Integer)
     tradeoffs: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String, default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    option_key: Mapped[str | None] = mapped_column(String)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    project_snapshots: Mapped[list] = mapped_column(JSONB, default=list)
+    analysis_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict)
+    draft_tasks: Mapped[list] = mapped_column(JSONB, default=list)
+    decision_reason: Mapped[str | None] = mapped_column(Text)
+    decided_by: Mapped[str | None] = mapped_column(String)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WorkplanHeader(Base):
+    __tablename__ = "workplan_headers"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    coordination_plan_id: Mapped[str] = mapped_column(ForeignKey("coordination_plans.id"), unique=True)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
+    approved_by: Mapped[str | None] = mapped_column(String)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    proposal_revision: Mapped[int] = mapped_column(Integer)
+    warnings: Mapped[list] = mapped_column(JSONB, default=list)
+
+
+class PlanAuditEvent(Base):
+    __tablename__ = "plan_audit_events"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    coordination_plan_id: Mapped[str] = mapped_column(ForeignKey("coordination_plans.id"), index=True)
+    event: Mapped[str] = mapped_column(String)
+    actor: Mapped[str] = mapped_column(String)
+    revision: Mapped[int] = mapped_column(Integer)
+    details: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Workplan(Base):
     __tablename__ = "workplans"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    workplan_id: Mapped[str] = mapped_column(ForeignKey("workplan_headers.id"), index=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    notes: Mapped[str] = mapped_column(Text, default="")
     coordination_plan_id: Mapped[str] = mapped_column(ForeignKey("coordination_plans.id"))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     task: Mapped[str] = mapped_column(String)
