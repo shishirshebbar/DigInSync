@@ -1,5 +1,6 @@
 import ProjectWorkspace from "@/components/ProjectWorkspace";
 import { Suspense } from "react";
+export const metadata = { title: "Project workspace | DigInSync" };
 
 async function ProjectContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -7,5 +8,15 @@ async function ProjectContent({ params }: { params: Promise<{ id: string }> }) {
 }
 
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  return <Suspense fallback={<main id="main-content" className="workspace" role="status">Loading project workspace…</main>}><ProjectContent params={params} /></Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <main id="main-content" className="workspace" role="status">
+          Loading project workspace…
+        </main>
+      }
+    >
+      <ProjectContent params={params} />
+    </Suspense>
+  );
 }
