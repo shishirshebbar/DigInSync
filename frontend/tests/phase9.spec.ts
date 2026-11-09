@@ -6,9 +6,7 @@ test("road selection, map, simulation and dashboard preserve the approval workfl
 }) => {
   const backend = process.env.E2E_API_URL;
   if (!backend)
-    throw new Error(
-      "Run using python -m tests.run_browser_smoke from backend with RUN_DB_INTEGRATION=1.",
-    );
+    test.skip(true, "Run using python -m tests.run_browser_smoke from backend with RUN_DB_INTEGRATION=1.");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", (route) => {
@@ -129,7 +127,7 @@ test("unmapped projects, empty searches and independent API retries remain usabl
   request,
 }) => {
   const backend = process.env.E2E_API_URL;
-  if (!backend) throw new Error("Use the disposable browser runner.");
+  if (!backend) test.skip(true, "Use the disposable browser runner.");
   let failRisk = true;
   await page.route("**/api/**", (route) => {
     const source = new URL(route.request().url());

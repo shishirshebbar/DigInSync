@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { ExtractedProject } from "@/types";
-import { clearDraft, setDraftDirty, useMemoryState, useUnloadWarning, useHydrated } from "@/lib/drafts";
+import { clearDraft, setDraftDirty, useMemoryState, useUnloadWarning } from "@/lib/drafts";
 import { useRequestGuard } from "@/lib/use-request-guard";
 import RoadPicker from "./RoadPicker";
 import { Field } from "./FormField";
@@ -74,7 +74,6 @@ export default function ProjectConfirmation({
   onConfirmed: (project: ExtractedProject, id: string) => void;
 }) {
   const [form, setForm] = useMemoryState<ExtractedProject>("new-project", project);
-  const hydrated = useHydrated();
   const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submission, setSubmission] = useMemoryState<Submission>("new-project:submission", { status: "idle" });
@@ -155,7 +154,7 @@ export default function ProjectConfirmation({
         </div>
         <span className="badge">Not saved</span>
       </div>
-      <fieldset disabled={busy || !hydrated}>
+      <fieldset disabled={busy}>
         <AIProjectAssist
           current={form}
           onApply={(changes) => {

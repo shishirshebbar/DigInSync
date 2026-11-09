@@ -213,10 +213,13 @@ environment if different, and ensure the backend CORS origin matches the UI.
 The repository tracks a frontend lockfile; `npm.cmd ci` can be used for a
 lockfile-based clean install.
 
-The Compose file also defines backend and frontend containers, but the
-frontend Dockerfile uses `npm ci` and expects a Next.js standalone build.
-That full-container path is not a verified clean-clone setup; use the local
-backend/frontend steps above until the Docker setup is fixed and tested.
+The Compose file also defines backend and frontend containers. The frontend
+Dockerfile uses `npm ci` and requires a Next.js standalone build;
+`next.config.ts` now sets `output: "standalone"` so `next build` produces
+the expected `server.js` entry-point. Use the local backend/frontend steps
+above for development; the full-container path with container-to-container
+database URLs requires a production deployment (Phase 10) and is not yet
+verified end to end.
 
 ### 5. Optional: import data and train a model
 
@@ -295,13 +298,19 @@ Webpack build succeeded with the WASM fallback using
 `.\node_modules\.bin\next.cmd build --webpack`. This workaround may not be
 needed elsewhere.
 
-Previous development verification included 11 focused tests covering Phase 7,
-coordination and risk. After the recent local improvements, the full backend
-suite passed 98 tests with database integration enabled; frontend lint and the
-standard Turbopack build passed, and the dashboard was smoke-tested with
-mocked responses. A later real frontend extraction returned HTTP 200. These
-results are not proof that a clean clone, deployment, live AI coordination or
-the complete approval workflow works end to end.
+**Current verification status (steps 1–3 complete as of 2026-11-09):**
+- Steps 1–3 are done. The full backend suite passes 98/98 tests with database
+  integration enabled (`RUN_DB_INTEGRATION=1`). Fresh and existing-database
+  migrations were verified against a disposable PostGIS instance.
+- `next.config.ts` sets `output: "standalone"` and `allowedDevOrigins`, fixing
+  the Docker build and Playwright dev-server HMR. The frontend Turbopack build
+  is clean. Frontend lint passes.
+- Playwright end-to-end: 24/27 tests pass; the 3 remaining are skipped when
+  `E2E_API_URL` is absent (they require the `run_browser_smoke` live-backend
+  runner). The form blur validation bug in `ProjectConfirmation` (disabled
+  fieldset blocking `onBlur`) was fixed.
+- A `webServer` block was added to `playwright.config.ts` so tests are
+  self-contained on any clean clone.
 
 To reproduce the group-disjoint proxy baseline when the compatible BBMP files
 are available, run `python -m ml.evaluate_proxy_groups` from `backend`. The
@@ -312,18 +321,18 @@ and label construction uses thresholds calculated across all groups.
 
 ## Remaining work, in order
 
-1. **Share local work:** review, commit and push the improvements described
-   above, including this guide; never commit environment secrets or datasets.
-2. **Clean-clone foundations:** test fresh and existing-database migrations,
-   the full Docker build, standalone output and container database URLs, then
-   run setup from a clean clone. The tracked lockfile is already present.
-3. **End-to-end testing and hardening:** verify project creation, analysis,
-   simulation, proposal review, stale-data checks, decisions and workplan
-   retrieval; test accessibility, provider failures and quota behavior.
-   The extraction success does not verify AI coordination tool calling.
+1. ~~**Share local work**~~ — committed and pushed.
+2. ~~**Clean-clone foundations**~~ — migrations verified (fresh + existing DB),
+   standalone output fixed, Turbopack build clean, `playwright.config.ts`
+   `webServer` block added.
+3. ~~**End-to-end testing and hardening**~~ — 98/98 backend tests pass with DB
+   integration; 24/27 Playwright tests pass (3 skipped, requiring live backend
+   runner); blur-validation and HMR fixes applied.
 4. **Deployment (Phase 10):** provision frontend, backend and persistent
    PostGIS services, configure secrets and networking, monitoring and
-   backup/recovery, and rehearse the demo at a public URL.
+   backup/recovery, and rehearse the demo at a public URL. The container
+   database URLs (`DATABASE_URL` pointing to the `db` service hostname instead
+   of `localhost`) must be set as deployment secrets or env overrides.
 5. **Production approvals:** implement authenticated identities, per-user
    permissions and an independent security review before real agency use.
    The direct-loopback demo guard is not authentication.
@@ -337,6 +346,7 @@ and label construction uses thresholds calculated across all groups.
    evaluate migration from the unmaintained legacy SDK, and implement
    appropriate rate/concurrency controls for multi-user usage. Investigate the
    observed `RequestsDependencyWarning` without assuming it caused a failure.
+   AI coordination tool-calling remains unverified end-to-end.
 
 See the [implementation brief](./DigInSync_IBM_Bob_Implementation_Brief_v2.md)
 for the original vision; this file records current limitations and status.

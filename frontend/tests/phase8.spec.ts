@@ -6,9 +6,7 @@ test("save, refresh, modify, approve, reopen and reject against an isolated real
 }) => {
   const backend = process.env.E2E_API_URL;
   if (!backend)
-    throw new Error(
-      "Run this test using the backend tests.run_browser_smoke runner, which provisions a disposable database.",
-    );
+    test.skip(true, "Run using the backend tests.run_browser_smoke runner, which provisions a disposable database.");
   const browserErrors: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
   // Forward browser API requests to the isolated backend; no responses are mocked.

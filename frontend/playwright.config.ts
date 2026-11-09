@@ -6,6 +6,12 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   reporter: "list",
+  webServer: {
+    command: "npm run dev",
+    url: "http://127.0.0.1:3000",
+    reuseExistingServer: true,
+    timeout: 60_000,
+  },
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000",
     headless: true,
