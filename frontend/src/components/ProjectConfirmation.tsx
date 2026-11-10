@@ -22,6 +22,33 @@ export const blankProject: ExtractedProject = {
   lane_closure: null,
   road_segment_id: null,
 };
+
+const ORGANIZATIONS = [
+  "BBMP",
+  "BWSSB",
+  "BESCOM",
+  "BMRCL",
+  "BSNL",
+  "BMTC",
+  "BDA",
+  "KPTCL",
+  "GAIL",
+  "Reliance Jio",
+  "Airtel",
+  "Other",
+];
+
+const DEMO_PROJECT: ExtractedProject = {
+  organization: "BWSSB",
+  project_type: "water_pipeline",
+  description: "Replacement of aging water supply pipeline along 80 Feet Road due to frequent leakages and pressure loss. Work includes open trench excavation, pipe laying, and road restoration.",
+  road_name: "80 Feet Road",
+  start_date: "2026-12-01",
+  end_date: "2026-12-22",
+  length_m: 420,
+  lane_closure: 1,
+  road_segment_id: null,
+};
 type FormField = Exclude<keyof ExtractedProject, "road_segment_id">;
 type Submission =
   | { status: "idle" }
@@ -154,6 +181,21 @@ export default function ProjectConfirmation({
         </div>
         <span className="badge">Not saved</span>
       </div>
+      <div className="form-section" style={{paddingBottom: 0}}>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{fontSize: "0.75rem"}}
+          onClick={() => {
+            setError(null);
+            setForm(DEMO_PROJECT);
+            setTouched({});
+            setSubmitted(false);
+          }}
+        >
+          ✦ Fill demo project
+        </button>
+      </div>
       <fieldset disabled={busy}>
         <AIProjectAssist
           current={form}
@@ -175,13 +217,16 @@ export default function ProjectConfirmation({
           </p>
           <div className="form-grid">
             <Field {...props("organization")}>
-              <input
+              <select
                 className="input"
-                maxLength={200}
                 value={form.organization ?? ""}
                 onChange={(event) => update("organization", event.target.value || null)}
-                placeholder="Responsible agency or team"
-              />
+              >
+                <option value="">Select an organization</option>
+                {ORGANIZATIONS.map((org) => (
+                  <option key={org} value={org}>{org}</option>
+                ))}
+              </select>
             </Field>
             <Field {...props("project_type")}>
               <select
