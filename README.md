@@ -1,9 +1,26 @@
-# DigInSync
+## DigInSync
 
 DigInSync is a prototype for coordinating road and utility works in Bengaluru. You enter a project (optionally with Gemini-assisted extraction from text), review conflicts with nearby works, compare schedules, and draft coordination proposals. It also shows an experimental risk indicator.
 
 
-
+# Problem statement
+Water, telecom, electricity, drainage, and road-maintenance teams can plan work independently on the
+same road or in the same area. Without a shared view of location, timing, and responsibilities, one project
+may overlap another or require a road to be reopened after restoration. These situations create the risk of
+repeated excavation, avoidable closures, duplicated restoration effort, and disruption to residents,
+businesses, and road users.
+The planning gap is the absence of a consistent way to compare proposed works, expose uncertainty in the
+available data, and turn a discussion into a traceable coordination plan. A useful solution must help people
+act on reliable evidence while preserving agency review and responsibility.
+# Proposed solution
+DigInSync provides a shared planning workspace where coordinators register work, inspect candidate
+projects and schedules, compare alternatives, and prepare a proposal with named organizations and task
+dependencies. Human reviewers assess a saved revision before recording a local decision and generating a
+workplan. AI assists information extraction and explanation; deterministic rules perform conflict analysis and
+validation.
+The intended users are infrastructure planners, utility coordinators, and project reviewers. The central
+workflow is project entry, evidence review, optional schedule comparison, proposal preparation, savedrevision
+review, and workplan generation.
 
 
 ## Setup
