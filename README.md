@@ -2,9 +2,9 @@
 
 DigInSync is a prototype for coordinating road and utility works in Bengaluru. You enter a project (optionally with Gemini-assisted extraction from text), review conflicts with nearby works, compare schedules, and draft coordination proposals. It also shows an experimental risk indicator.
 
-> **Limitations:** this is a prototype. The risk score is trained on proxy labels, so it is not a verified prediction or a probability of disruption. Approvals are local-demo only and are not real authentication.
 
-**Stack:** FastAPI + PostGIS (backend), Next.js (frontend), Gemini (optional).
+
+
 
 ## Setup
 
