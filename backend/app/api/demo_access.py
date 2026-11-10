@@ -1,4 +1,4 @@
-"""Restrict explicitly enabled demo mutations to direct loopback requests."""
+"""Restrict explicitly enabled demo mutations to direct loopback requests or a demo token."""
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
@@ -19,6 +19,14 @@ def is_direct_loopback(request: Request) -> bool:
     return host in {"localhost", "127.0.0.1", "::1"}
 
 
+def _has_valid_demo_token(request: Request) -> bool:
+    from app.config import get_settings
+    token = get_settings().demo_token
+    if not token:
+        return False
+    return request.headers.get("x-demo-token") == token
+
+
 def require_direct_loopback(request: Request) -> None:
-    if not is_direct_loopback(request):
+    if not is_direct_loopback(request) and not _has_valid_demo_token(request):
         raise HTTPException(403, "Demo decisions require a direct local connection; proxy and remote requests are not supported.")

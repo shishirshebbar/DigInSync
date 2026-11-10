@@ -34,11 +34,13 @@ export default function MapCanvas({ data, selectedId, overlappingIds = EMPTY, on
     async function roads() {
       const ticket = ++generation;
       const bounds = map.getBounds();
-      if (bounds.getEast() - bounds.getWest() > 0.35 || bounds.getNorth() - bounds.getSouth() > 0.35) {
+      const w = bounds.getWest(), e = bounds.getEast(), s = bounds.getSouth(), n = bounds.getNorth();
+      if (e - w < 0.0001 || n - s < 0.0001) return; // degenerate bounds on first render
+      if (e - w > 0.35 || n - s > 0.35) {
         background.clearLayers(); setRoadMessage("Zoom in to view imported roads."); return;
       }
       try {
-        const result = await api.roads("", 0, [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].join(","));
+        const result = await api.roads("", 0, [w, s, e, n].join(","));
         if (!alive || ticket !== generation) return;
         background.clearLayers().addData(result);
         setRoadMessage(result.total === 0 ? "No imported roads in this view." : `${Math.min(result.total, result.limit)} of ${result.total} imported road segments shown. Zoom in for detail.`);

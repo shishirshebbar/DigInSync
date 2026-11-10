@@ -1,4 +1,5 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const DEMO_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN ?? "";
 import type { AuditEvent, ConflictResult, CoordinationResult, DemoConfig, ExtractedProject, OptionKey, Proposal, ProposalContent, ProposalSummary, RiskResult, ScheduleChange, SimulationResponse, Workplan } from "@/types";
 import type { ImpactMetrics, MapCollection, ProjectCatalog, ProjectMapData, SavedProject } from "@/types";
 import type { WardContext } from "@/types";
@@ -20,7 +21,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     (/^\/api\/coordination-plans(?:\/|$)/.test(path) || path === "/api/projects/" || path === "/api/conflicts/analyze" || path === "/api/risk/predict" || path === "/api/coordinate/"));
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(DEMO_TOKEN ? { "x-demo-token": DEMO_TOKEN } : {}),
+      },
       ...options,
     });
     if (!res.ok) {

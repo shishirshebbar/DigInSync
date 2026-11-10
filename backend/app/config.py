@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     backend_cors_origins: str = "http://localhost:3000"
     enable_demo_approvals: bool = False
     demo_reviewer_id: str = "local-demo-reviewer"
+    demo_token: str = ""
 
     @property
     def cors_origins(self) -> list[str]:
