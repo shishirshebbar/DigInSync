@@ -94,7 +94,19 @@ class RoadHandler(osmium.SimpleHandler):
 def load_roads(roads, db_url):
     if not roads:
         raise ValueError("No roads found; refusing to import an empty extract")
-    with closing(psycopg2.connect(db_url)) as conn:
+    # psycopg2 misparses URLs with a dotted username (e.g. Supabase pooler).
+    # Parse manually and pass keyword arguments to avoid the issue.
+    from urllib.parse import urlparse, unquote
+    parsed = urlparse(db_url)
+    connect_kwargs = {
+        "host": parsed.hostname,
+        "port": parsed.port or 5432,
+        "dbname": parsed.path.lstrip("/"),
+        "user": unquote(parsed.username or ""),
+        "password": unquote(parsed.password or ""),
+        "sslmode": "require",
+    }
+    with closing(psycopg2.connect(**connect_kwargs)) as conn:
         with conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT osm_id, id FROM road_segments WHERE osm_id IS NOT NULL")

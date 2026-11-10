@@ -10,8 +10,7 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
     >
       {result.conflict_count === 0 ? (
         <p className="text-sm muted">
-          No conflicts found among the available candidates. This does not establish that work is
-          safe to proceed.
+          No candidate projects found in the current dataset for this location.
         </p>
       ) : (
         <ul className="record-list">
@@ -30,7 +29,7 @@ export default function ConflictPanel({ result }: { result: ConflictResult }) {
                 {conflict.spatial_overlap && (
                   <span className="badge">
                     {result.location_basis === "road_name"
-                      ? "Same road name · unverified"
+                      ? "Same road name"
                       : "Within analysis radius"}
                   </span>
                 )}

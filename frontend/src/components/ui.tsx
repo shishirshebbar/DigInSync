@@ -183,7 +183,7 @@ export function SectionNav({
 
 export function Warnings({
   warnings,
-  title = "Data limitations",
+  title = "Coverage notes",
 }: {
   warnings: string[];
   title?: string;

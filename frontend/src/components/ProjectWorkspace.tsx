@@ -300,8 +300,8 @@ export default function ProjectWorkspace({ id }: { id: string }) {
                         </span>
                         <span className="block text-xs text-slate-600">
                           {item.geometry
-                            ? "Recorded road geometry"
-                            : "Unmapped — location unverified"}
+                            ? "Road geometry available"
+                            : "Road name only"}
                           {overlappingIds.includes(item.id) ? " · Overlapping dates" : ""}
                         </span>
                       </button>
@@ -318,8 +318,7 @@ export default function ProjectWorkspace({ id }: { id: string }) {
                 </ul>
                 {mapData.total === 1 && (
                   <p className="mt-3 text-sm text-slate-600">
-                    No candidate projects found in the available data. This does not establish that
-                    work is safe to proceed.
+                    No candidate projects found in the current dataset for this location.
                   </p>
                 )}
               </div>

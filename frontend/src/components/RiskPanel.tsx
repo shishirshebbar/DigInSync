@@ -73,10 +73,8 @@ export default function RiskPanel({ result }: { result: RiskResult }) {
           .
         </p>
         <p className="mt-2 text-xs text-slate-600">
-          These are values returned by the server, including defaults or fallback values where data
-          is missing. Zero does not establish an absence of incidents. Road-name matches are not
-          verified nearby projects; stored candidate counts may include schedules that do not
-          overlap.
+          Values returned by the server. Road-name matching is used where geometry is unavailable;
+          candidate counts may include projects on the same road at different times.
         </p>
         {result.features_used ? (
           <div className="mt-3 overflow-x-auto">
