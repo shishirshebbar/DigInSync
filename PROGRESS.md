@@ -328,11 +328,16 @@ and label construction uses thresholds calculated across all groups.
 3. ~~**End-to-end testing and hardening**~~ — 98/98 backend tests pass with DB
    integration; 24/27 Playwright tests pass (3 skipped, requiring live backend
    runner); blur-validation and HMR fixes applied.
-4. **Deployment (Phase 10):** provision frontend, backend and persistent
-   PostGIS services, configure secrets and networking, monitoring and
-   backup/recovery, and rehearse the demo at a public URL. The container
-   database URLs (`DATABASE_URL` pointing to the `db` service hostname instead
-   of `localhost`) must be set as deployment secrets or env overrides.
+4. **Deployment (Phase 10) — in progress:**
+   - Supabase PostGIS database provisioned; `postgis` and `postgis_topology`
+     extensions enabled. Host: `db.foaobkfnzmrfyhavexec.supabase.co:5432`.
+   - `backend/start.sh` runs `alembic upgrade head` then starts uvicorn.
+     `backend/Dockerfile` updated to use `start.sh` as CMD.
+   - `backend/railway.toml` and `frontend/railway.toml` added.
+   - `.railway.env.example` documents all required Railway env vars.
+   - **Remaining:** deploy both services on Railway, set env vars from
+     `.railway.env.example`, verify `/health` and public frontend URL,
+     set up UptimeRobot to keep Supabase active.
 5. **Production approvals:** implement authenticated identities, per-user
    permissions and an independent security review before real agency use.
    The direct-loopback demo guard is not authentication.
