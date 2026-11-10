@@ -41,11 +41,11 @@ const ORGANIZATIONS = [
 const DEMO_PROJECT: ExtractedProject = {
   organization: "BWSSB",
   project_type: "water_pipeline",
-  description: "Replacement of aging water supply pipeline along 80 Feet Road due to frequent leakages and pressure loss. Work includes open trench excavation, pipe laying, and road restoration.",
-  road_name: "80 Feet Road",
+  description: "Replacement of aging water supply pipeline along Outer Ring Road due to frequent leakages and pressure loss. Work includes open trench excavation, pipe laying, and road restoration.",
+  road_name: "Outer Ring Road",
   start_date: "2026-12-01",
   end_date: "2026-12-22",
-  length_m: 420,
+  length_m: 850,
   lane_closure: 1,
   road_segment_id: null,
 };

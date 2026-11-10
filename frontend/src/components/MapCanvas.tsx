@@ -13,6 +13,8 @@ export default function MapCanvas({ data, selectedId, overlappingIds = EMPTY, on
   const lastData = useRef<MapProps["data"] | null>(null);
   const [tileError, setTileError] = useState(false);
   const [roadMessage, setRoadMessage] = useState("");
+  const [satellite, setSatellite] = useState(false);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!element.current) return;
@@ -20,8 +22,10 @@ export default function MapCanvas({ data, selectedId, overlappingIds = EMPTY, on
     mapRef.current = map;
     const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
     if (tileUrl && tileUrl !== "none") {
-      L.tileLayer(tileUrl, { maxZoom: 19, attribution: process.env.NEXT_PUBLIC_MAP_ATTRIBUTION ?? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>' })
-        .on("tileerror", () => setTileError(true)).addTo(map);
+      const layer = L.tileLayer(tileUrl, { maxZoom: 19, attribution: process.env.NEXT_PUBLIC_MAP_ATTRIBUTION ?? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>' })
+        .on("tileerror", () => setTileError(true));
+      layer.addTo(map);
+      tileLayerRef.current = layer;
     }
     const background = L.geoJSON(undefined, { style: { color: "#64748b", weight: 2, opacity: 0.4 }, interactive: false }).addTo(map);
     let alive = true;
@@ -74,8 +78,37 @@ export default function MapCanvas({ data, selectedId, overlappingIds = EMPTY, on
     return () => { layers.remove(); };
   }, [data, selectedId, overlappingIds, onSelect]);
 
+  function toggleSatellite() {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !satellite;
+    setSatellite(next);
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+    const url = next
+      ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      : (process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png");
+    const attribution = next
+      ? "Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics"
+      : (process.env.NEXT_PUBLIC_MAP_ATTRIBUTION ?? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>');
+    const layer = L.tileLayer(url, { maxZoom: 19, attribution }).addTo(map);
+    tileLayerRef.current = layer;
+    layer.bringToBack();
+  }
+
   return <div className="space-y-2">
-    <div ref={element} role="region" aria-label="Project location map. Use arrow keys to pan and plus or minus to zoom." className="map-frame" />
+    <div className="relative">
+      <div ref={element} role="region" aria-label="Project location map. Use arrow keys to pan and plus or minus to zoom." className="map-frame" />
+      <button
+        type="button"
+        onClick={toggleSatellite}
+        className="absolute bottom-8 right-2 z-[1000] bg-white border border-slate-300 rounded px-2 py-1 text-xs shadow hover:bg-slate-50"
+        style={{pointerEvents: "auto"}}
+      >
+        {satellite ? "🗺 Street" : "🛰 Satellite"}
+      </button>
+    </div>
     <p className="text-xs text-slate-600">Blue: selected project · Teal dashed: candidate · Red dashed: overlapping dates · Purple: list selection</p>
     {tileError && <p role="status" className="text-sm text-amber-800">Background tiles unavailable. Geometry and project lists remain usable.</p>}
     <p className="text-xs text-slate-600">{roadMessage}</p>
