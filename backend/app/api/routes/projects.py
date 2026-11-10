@@ -54,6 +54,14 @@ async def list_nearby_projects(
     return await project_service.find_nearby_projects(db, lat, lon, radius_m)
 
 
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
+    """Delete a project and all associated data."""
+    deleted = await project_service.delete_project(db, project_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+
 @router.post("/extract", response_model=ProjectExtract)
 async def extract_project(body: ProjectExtractRequest):
     """

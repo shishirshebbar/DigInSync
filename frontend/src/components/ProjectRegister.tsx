@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { ProjectCatalog, SavedProject } from "@/types";
 import { EmptyState, Notice, PageHeader, Panel, StatusBadge, displayDate } from "./ui";
 
 export default function ProjectRegister() {
+  const router = useRouter();
   const [catalog, setCatalog] = useState<ProjectCatalog | null>(null);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -14,6 +16,19 @@ export default function ProjectRegister() {
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function handleDelete(project: SavedProject) {
+    if (!confirm(`Delete "${project.road_name ?? "this project"}"? This cannot be undone.`)) return;
+    setDeletingId(project.id);
+    api.deleteProject(project.id).then(() => {
+      setRefresh((v) => v + 1);
+      setDeletingId(null);
+    }).catch(() => {
+      setDeletingId(null);
+      alert("Delete failed. Please try again.");
+    });
+  }
   useEffect(() => {
     let active = true;
     api
@@ -145,6 +160,7 @@ export default function ProjectRegister() {
                     <th scope="col">Original schedule</th>
                     <th scope="col">Location</th>
                     <th scope="col">Status</th>
+                    <th scope="col"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,6 +181,16 @@ export default function ProjectRegister() {
                       <td>
                         <StatusBadge status={project.status} />
                       </td>
+                      <td>
+                        <button
+                          className="text-xs"
+                          style={{ color: "#b91c1c" }}
+                          disabled={deletingId === project.id}
+                          onClick={() => handleDelete(project)}
+                        >
+                          {deletingId === project.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,11 +209,19 @@ export default function ProjectRegister() {
                     {project.organization} · {project.project_type.replaceAll("_", " ")}
                   </p>
                   <p className="record-meta">{schedule(project)} (end exclusive)</p>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2 items-center">
                     <StatusBadge status={project.status} />
                     <span className="badge">
                       {project.road_segment_id ? "Road selected" : "Unmapped"}
                     </span>
+                    <button
+                      className="text-xs ml-auto"
+                      style={{ color: "#b91c1c" }}
+                      disabled={deletingId === project.id}
+                      onClick={() => handleDelete(project)}
+                    >
+                      {deletingId === project.id ? "Deleting…" : "Delete"}
+                    </button>
                   </div>
                 </li>
               ))}

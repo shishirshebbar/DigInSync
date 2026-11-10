@@ -50,6 +50,15 @@ async def get_project(db: AsyncSession, project_id: str) -> Project | None:
     return result.scalar_one_or_none()
 
 
+async def delete_project(db: AsyncSession, project_id: str) -> bool:
+    project = await get_project(db, project_id)
+    if project is None:
+        return False
+    await db.delete(project)
+    await db.commit()
+    return True
+
+
 async def find_nearby_projects(
     db: AsyncSession, lat: float, lon: float, radius_m: float
 ) -> list[Project]:

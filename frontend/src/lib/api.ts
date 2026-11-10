@@ -49,6 +49,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  deleteProject: (id: string) =>
+    request<void>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getProject: (id: string) => request<SavedProject>(`/api/projects/${encodeURIComponent(id)}`),
   projectMap: (id: string) => request<ProjectMapData>(`/api/projects/${encodeURIComponent(id)}/map`),
   catalog: (q = "", offset = 0) => request<ProjectCatalog>(`/api/projects/catalog?${new URLSearchParams({ q, offset: String(offset), limit: "25" })}`),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type {
@@ -28,7 +29,9 @@ const message = (error: unknown) =>
   error instanceof Error ? error.message : "Request failed. Please retry.";
 
 export default function ProjectWorkspace({ id }: { id: string }) {
+  const router = useRouter();
   const [project, setProject] = useState<SavedProject | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [mapData, setMapData] = useState<ProjectMapData | null>(null);
   const [conflicts, setConflicts] = useState<ConflictResult | null>(null);
   const [risk, setRisk] = useState<RiskResult | null>(null);
@@ -162,16 +165,33 @@ export default function ProjectWorkspace({ id }: { id: string }) {
             : "Review project evidence and prepare a coordinated plan."
         }
         actions={
-          <button
-            className="btn-secondary"
-            disabled={busy}
-            onClick={() => {
-              setCoordination(null);
-              setRefresh((value) => value + 1);
-            }}
-          >
-            {busy ? "Refreshing…" : "Refresh analysis"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="btn-secondary"
+              disabled={busy}
+              onClick={() => {
+                setCoordination(null);
+                setRefresh((value) => value + 1);
+              }}
+            >
+              {busy ? "Refreshing…" : "Refresh analysis"}
+            </button>
+            <button
+              className="btn-secondary"
+              style={{ color: "#b91c1c" }}
+              disabled={busy || deleting}
+              onClick={() => {
+                if (!confirm("Delete this project and all its data? This cannot be undone.")) return;
+                setDeleting(true);
+                api.deleteProject(id).then(() => router.push("/projects/deleted")).catch(() => {
+                  setDeleting(false);
+                  alert("Delete failed. Please try again.");
+                });
+              }}
+            >
+              {deleting ? "Deleting…" : "Delete project"}
+            </button>
+          </div>
         }
       />
       <WorkflowTracker mode="project" projectId={id} />

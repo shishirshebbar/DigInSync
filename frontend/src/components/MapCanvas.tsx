@@ -112,6 +112,5 @@ export default function MapCanvas({ data, selectedId, overlappingIds = EMPTY, on
     <p className="text-xs text-slate-600">Blue: selected project · Teal dashed: candidate · Red dashed: overlapping dates · Purple: list selection</p>
     {tileError && <p role="status" className="text-sm text-amber-800">Background tiles unavailable. Geometry and project lists remain usable.</p>}
     <p className="text-xs text-slate-600">{roadMessage}</p>
-    <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer" className="text-xs underline">Report a map issue</a>
   </div>;
 }
