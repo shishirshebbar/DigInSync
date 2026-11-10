@@ -27,6 +27,10 @@ def _has_valid_demo_token(request: Request) -> bool:
     return request.headers.get("x-demo-token") == token
 
 
+def has_demo_access(request: Request) -> bool:
+    return is_direct_loopback(request) or _has_valid_demo_token(request)
+
+
 def require_direct_loopback(request: Request) -> None:
-    if not is_direct_loopback(request) and not _has_valid_demo_token(request):
+    if not has_demo_access(request):
         raise HTTPException(403, "Demo decisions require a direct local connection; proxy and remote requests are not supported.")

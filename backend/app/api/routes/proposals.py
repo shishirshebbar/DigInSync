@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.api.demo_access import is_direct_loopback, require_direct_loopback
+from app.api.demo_access import has_demo_access, require_direct_loopback
 from app.database import get_db
 from app.schemas.proposal import (
     AuditEventRead, PlanDecision, PlanRejection, ProposalCreate, ProposalRead, ProposalUpdate,
@@ -17,7 +17,7 @@ router = APIRouter()
 async def demo_config(request: Request):
     settings = get_settings()
     return {"enabled": settings.environment == "development" and settings.enable_demo_approvals
-            and bool(settings.demo_reviewer_id.strip()) and is_direct_loopback(request), "reviewer": settings.demo_reviewer_id,
+            and bool(settings.demo_reviewer_id.strip()) and has_demo_access(request), "reviewer": settings.demo_reviewer_id,
             "mode": "local_demo"}
 
 

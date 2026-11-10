@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # LLM
     llm_provider: str = "gemini"  # gemini
     llm_api_key: str = ""
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-2.5-flash"
 
     # Map
     map_api_key: str = ""
